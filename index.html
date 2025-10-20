@@ -1604,6 +1604,55 @@ document.addEventListener('DOMContentLoaded', () => {
     alert('Thank you! You may now use all BorrowBox features.');
   });
 });
+
+<!-- Guidelines Lock Script -->
+<script>
+function hasAcceptedGuidelines() {
+  return localStorage.getItem('bb_guidelinesAccepted') === 'true';
+}
+function requireGuidelinesBeforeAction(actionName) {
+  if (!hasAcceptedGuidelines()) {
+    alert('You must accept the guidelines before you can ' + actionName + '.');
+    location.hash = '#/guidelines';
+    return false;
+  }
+  return true;
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const agreeBtn = document.getElementById('agreeBtn');
+  const notice = document.getElementById('agreeNotice');
+  if (agreeBtn) {
+    agreeBtn.addEventListener('click', () => {
+      localStorage.setItem('bb_guidelinesAccepted', 'true');
+      agreeBtn.style.display = 'none';
+      notice.style.display = 'block';
+      alert('Thank you! You can now add items, rent, or review.');
+    });
+  }
+  if (hasAcceptedGuidelines()) {
+    if (agreeBtn) agreeBtn.style.display = 'none';
+    if (notice) notice.style.display = 'block';
+  }
+});
+if (document.getElementById('addItemForm')) {
+  document.getElementById('addItemForm').addEventListener('submit', (e) => {
+    if (!requireGuidelinesBeforeAction('add an item')) e.preventDefault();
+  }, true);
+}
+const originalStartCheckout = window.startCheckout;
+window.startCheckout = function(mode) {
+  if (!requireGuidelinesBeforeAction('rent or borrow an item')) return;
+  originalStartCheckout(mode);
+};
+const reviewObserver = new MutationObserver(() => {
+  const reviewBtn = document.getElementById('submitReview');
+  if (reviewBtn) {
+    reviewBtn.addEventListener('click', (e) => {
+      if (!requireGuidelinesBeforeAction('leave a review')) e.preventDefault();
+    }, true);
+  }
+});
+reviewObserver.observe(document.body, { childList: true, subtree: true });
 </script>
 </body>
 
