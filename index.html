@@ -284,6 +284,75 @@
 
   /* subtle focus outline for interactive things */
   a:focus, button:focus, input:focus, select:focus, textarea:focus{ outline: 3px solid rgba(36,102,255,0.14); outline-offset:2px; }
+  
+  .modal-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    width: 320px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    position: relative;
+    text-align: left;
+  }
+  .modal h3 {
+    margin-top: 0;
+    color: #2466ff;
+    text-align: center;
+  }
+  .modal label {
+    display: block;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+  .modal input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 4px;
+  }
+  .btn-accent {
+    background: #2466ff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 15px;
+    cursor: pointer;
+    width: 100%;
+    transition: 0.2s;
+  }
+  .btn-accent:hover {
+    background: #1d56d9;
+  }
+  .close-btn {
+    position: absolute;
+    top: 8px; right: 10px;
+    border: none;
+    background: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .modal p {
+    margin-top: 12px;
+    text-align: center;
+  }
+  .modal a {
+    color: #2466ff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>
 
 </style>
 </head>
@@ -295,7 +364,6 @@
     <a href="#/" data-route>Home</a>
     <a href="#/shop" data-route>Shop</a>
     <a href="#/dashboard" data-route>Dashboard</a>
-    <a href="#" onclick="openSettingsModal()">Settings</a> <!-- ✅ Added -->
     <a href="#/add" data-route>Add Item</a>
     <a href="#/guidelines" data-route>Guidelines</a>
     <a href="#/about" data-route>About Us</a>
@@ -324,111 +392,6 @@
 </header>
 
 <main id="app">
-
-  <!-- SETTINGS MODAL -->
-<div id="settingsModal" class="modal-bg" style="display:none;">
-  <div class="modal">
-    <button class="close-btn" id="closeSettings">×</button>
-    <h3>Settings</h3>
-    <p><strong>User:</strong> <span id="settingsUserName">Guest</span></p>
-    <p><strong>Email:</strong> <span id="settingsUserEmail">Not signed in</span></p>
-    <hr>
-    <label class="toggle">
-      <input type="checkbox" id="darkModeToggle">
-      <span>Dark Mode</span>
-    </label>
-    <br>
-    <button class="btn-accent" id="openSettingsPage">More Settings</button>
-    <button class="btn-accent" id="logoutBtn">Log Out</button>
-  </div>
-</div>
-
-<!-- SETTINGS PAGE -->
-<section id="page-settings" class="page" style="display:none;">
-  <h2>Account Settings</h2>
-  <div class="settings-grid">
-    <div class="panel-border">
-      <h4>Profile</h4>
-      <label>Name:</label>
-      <input type="text" id="settingsNameInput" placeholder="Enter new name">
-      <label>Email:</label>
-      <input type="email" id="settingsEmailInput" placeholder="Enter new email">
-      <button class="btn-accent" id="saveSettingsBtn">Save Changes</button>
-    </div>
-    <div class="panel-border">
-      <h4>Password</h4>
-      <label>New Password:</label>
-      <input type="password" id="newPassword">
-      <label>Confirm Password:</label>
-      <input type="password" id="confirmPassword">
-      <button class="btn-accent" id="changePasswordBtn">Change Password</button>
-    </div>
-    <div class="panel-border">
-      <h4>Notifications</h4>
-      <label><input type="checkbox" id="notifToggle"> Enable email notifications</label>
-    </div>
-    <div class="panel-border">
-      <h4>Privacy</h4>
-      <p>Your data is securely stored in local storage only.</p>
-      <button class="btn-accent" id="deleteAccountBtn" style="background:#d9534f;">Delete Account</button>
-    </div>
-  </div>
-</section>
-
-<script>
-function openSettingsModal() {
-  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  document.getElementById('settingsUserName').textContent = user.name || 'Guest';
-  document.getElementById('settingsUserEmail').textContent = user.email || 'Not signed in';
-  document.getElementById('settingsModal').style.display = 'flex';
-}
-document.getElementById('closeSettings').addEventListener('click', ()=> document.getElementById('settingsModal').style.display='none');
-document.getElementById('openSettingsPage').addEventListener('click', ()=>{
-  document.getElementById('settingsModal').style.display='none';
-  showPage('#page-settings');
-});
-document.getElementById('logoutBtn').addEventListener('click', ()=>{
-  localStorage.removeItem('currentUser');
-  alert('You have been logged out.');
-  location.reload();
-});
-document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
-  const newName = document.getElementById('settingsNameInput').value.trim();
-  const newEmail = document.getElementById('settingsEmailInput').value.trim();
-  if (!newName && !newEmail) return alert('Enter something to update.');
-  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
-  const index = users.findIndex(u => u.email === user.email);
-  if (index === -1) return alert('User not found.');
-  if (newName) user.name = users[index].name = newName;
-  if (newEmail) user.email = users[index].email = newEmail;
-  localStorage.setItem('currentUser', JSON.stringify(user));
-  localStorage.setItem('bb_users', JSON.stringify(users));
-  alert('Account info updated.');
-});
-document.getElementById('changePasswordBtn').addEventListener('click', ()=>{
-  const p1 = document.getElementById('newPassword').value.trim();
-  const p2 = document.getElementById('confirmPassword').value.trim();
-  if (!p1 || !p2) return alert('Enter and confirm password.');
-  if (p1 !== p2) return alert('Passwords do not match.');
-  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
-  const index = users.findIndex(u => u.email === user.email);
-  users[index].password = p1;
-  localStorage.setItem('bb_users', JSON.stringify(users));
-  alert('Password changed successfully.');
-});
-document.getElementById('deleteAccountBtn').addEventListener('click', ()=>{
-  if (!confirm('Are you sure you want to delete your account?')) return;
-  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
-  users = users.filter(u => u.email !== user.email);
-  localStorage.removeItem('currentUser');
-  localStorage.setItem('bb_users', JSON.stringify(users));
-  alert('Account deleted.');
-  location.reload();
-});
-</script>
 
   <!-- HOME -->
   <section id="page-home" class="page" style="display:block">
@@ -662,7 +625,6 @@ document.getElementById('deleteAccountBtn').addEventListener('click', ()=>{
       <div class="panel-border">
         <h4>Your Transactions</h4>
         <div id="myTrans" class="scroll-panel"></div>
-        <button class="btn-accent" onclick="openSettingsModal()">⚙️ Settings</button>
       </div>
     </div>
   </section>
@@ -680,11 +642,7 @@ document.getElementById('deleteAccountBtn').addEventListener('click', ()=>{
         <li>Follow all local laws and safety guidelines.</li>
       </ul>
     </div>
-  
-  <div class="guidelines-agree" style="text-align:center;margin-top:20px;">
-    <button id="agreeBtn" class="btn-accent">I Agree</button>
-  </div>
-</section>
+  </section>
 
   <!-- ABOUT US -->
   <section id="page-about" class="page" style="display:none">
@@ -695,39 +653,57 @@ document.getElementById('deleteAccountBtn').addEventListener('click', ()=>{
   </section>
 
   <!-- CONTACT -->
-  <!-- CONTACT -->
-<section id="page-contact" class="page" style="display:none">
-  <div class="panel-fill">
-    <h2>Contact Info</h2>
-    <p>
-      alexandeg@umca.school<br>
-      dominic.p@umca.school<br><br>
-      <strong>Email:</strong>
-      <a href="mailto:borrowbox@gmail.com">borrowbox123@gmail.com</a><br>
-      <strong>Phone:</strong>
-      <a href="tel:+14163215574">416-321-5574</a>
-    </p>
-  </div>
-</section>
+  <section id="page-contact" class="page" style="display:none">
+    <div class="panel-fill">
+      <h2>Contact Info</h2>
+      <p>alexandeg@umca.school<br>dominic.p@umca.school</p>
+    </div>
+  </section>
+
+ 
 
   <!-- LOGIN MODAL -->
-  <div id="loginModal" class="modal-bg">
-    <div class="modal">
-      <h3>Log in / Sign up</h3>
-            <form id="loginForm" novalidate>
-        <label for="loginName">Name</label>
-        <input id="loginName" required />
+<div id="loginModal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <h3>Log In</h3>
+    <form id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" required />
 
-        <label for="loginEmail">Email</label>
-        <input id="loginEmail" type="text" required />
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" required />
 
-        <div style="margin-top:10px">
-          <button class="btn primary" type="submit">Sign in / Create</button>
-          <button class="btn" id="loginClose" type="button">Cancel</button>
-        </div>
-      </form>
-    </div>
+      <button type="submit" class="btn-accent">Log In</button>
+    </form>
+    <p>Don’t have an account? <a href="#" id="openSignupFromLogin">Sign Up</a></p>
+    <button class="close-btn" id="closeLogin">×</button>
   </div>
+</div>
+
+<!-- SIGNUP MODAL -->
+<div id="signupModal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <h3>Sign Up</h3>
+    <form id="signupForm">
+      <label for="signupName">Full Name</label>
+      <input id="signupName" type="text" required />
+
+      <label for="signupEmail">Email</label>
+      <input id="signupEmail" type="email" required />
+
+      <label for="signupPassword">Password</label>
+      <input id="signupPassword" type="password" required />
+
+      <label for="signupConfirmPassword">Confirm Password</label>
+      <input id="signupConfirmPassword" type="password" required />
+
+      <button type="submit" class="btn-accent">Create Account</button>
+    </form>
+
+    <p>Already have an account? <a href="#" id="openLoginFromSignup">Log In</a></p>
+    <button class="close-btn" id="closeSignup">×</button>
+  </div>
+</div>
 
   <!-- EDIT ITEM MODAL (full fields, matches Add Item) -->
   <div id="editModal" class="modal-bg">
@@ -1418,32 +1394,59 @@ function removeItem(id){
   renderDashboard();
 }
 /* AUTH */
-dom('loginClose').addEventListener('click', ()=> dom('loginModal').style.display='none');
+// --- AUTH FUNCTIONALITY ---
+dom('closeLogin').addEventListener('click', ()=> dom('loginModal').style.display='none');
+dom('closeSignup').addEventListener('click', ()=> dom('signupModal').style.display='none');
 
-dom('loginForm').addEventListener('submit', (e)=>{ 
-  e.preventDefault(); 
-  const name = dom('loginName').value.trim(); 
-  const email = dom('loginEmail').value.trim(); 
-  if (!name || !email) {
-    alert('Enter name and email.');
-    return;
-  }
+// Switch modals
+dom('openSignupFromLogin').addEventListener('click', (e)=>{
+  e.preventDefault();
+  dom('loginModal').style.display='none';
+  dom('signupModal').style.display='flex';
+});
+dom('openLoginFromSignup').addEventListener('click', (e)=>{
+  e.preventDefault();
+  dom('signupModal').style.display='none';
+  dom('loginModal').style.display='flex';
+});
+
+// --- SIGN UP ---
+dom('signupForm').addEventListener('submit',(e)=>{
+  e.preventDefault();
+  const name = dom('signupName').value.trim();
+  const email = dom('signupEmail').value.trim();
+  const password = dom('signupPassword').value.trim();
+  const confirm = dom('signupConfirmPassword').value.trim();
+
   const emailPattern = /^[^@]+@[^@]+\.com$/;
-  if (!emailPattern.test(email)) {
-    alert('Please enter a valid email address (e.g. name@example.com)');
-    return;
-  }
-  const users = JSON.parse(localStorage.getItem('bb_users') || '[]');
-  let user = users.find(u => u.email === email);
-  if (!user) { 
-    user = { name, email, created: new Date().toISOString() };
-    users.push(user);
-    localStorage.setItem('bb_users', JSON.stringify(users));
-  }
+  if(!emailPattern.test(email)) return alert('Enter a valid email (e.g. name@example.com)');
+  if(password !== confirm) return alert('Passwords do not match.');
+
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  if(users.some(u => u.email === email)) return alert('Email already registered.');
+
+  users.push({name,email,password});
+  localStorage.setItem('bb_users', JSON.stringify(users));
+  alert('Account created! You can now log in.');
+  dom('signupForm').reset();
+  dom('signupModal').style.display='none';
+  dom('loginModal').style.display='flex';
+});
+
+// --- LOG IN ---
+dom('loginForm').addEventListener('submit',(e)=>{
+  e.preventDefault();
+  const email = dom('loginEmail').value.trim();
+  const password = dom('loginPassword').value.trim();
+
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  const user = users.find(u => u.email === email && u.password === password);
+  if(!user) return alert('Invalid email or password.');
+
   setCurrentUser(user);
-  dom('loginModal').style.display = 'none';
-  dom('loginForm').reset();
   alert('Signed in as ' + user.name);
+  dom('loginModal').style.display='none';
+  renderDashboard();
 });
 
 function getCurrentUser() {
@@ -1567,41 +1570,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
-
-<script>
-// === Guidelines Agreement Logic ===
-document.addEventListener('DOMContentLoaded', () => {
-  const agreeBtn = document.getElementById('agreeBtn');
-  const agreed = localStorage.getItem('bb_agreed') === 'true';
-
-  if (agreeBtn) {
-    if (agreed) agreeBtn.style.display = 'none';
-    agreeBtn.addEventListener('click', () => {
-      localStorage.setItem('bb_agreed', 'true');
-      alert('Thank you for agreeing with the Guidelines');
-      agreeBtn.style.display = 'none';
-    });
-  }
-
-  // Helper to check if user agreed
-  window.checkGuidelinesAgreement = function(actionName) {
-    if (localStorage.getItem('bb_agreed') === 'true') return true;
-    alert('You must agree to the Guidelines before using this feature.' + (actionName ? ' (' + actionName + ')' : ''));
-    return false;
-  };
-
-  // Disable sensitive actions if not agreed
-  document.addEventListener('click', function(e) {
-    const t = e.target;
-    if (!localStorage.getItem('bb_agreed') || localStorage.getItem('bb_agreed') !== 'true') {
-      if (t.matches('.btn-add-item, #addItemBtn, .btn-purchase, .btn-review, #reviewSubmit, [data-action="borrow"], [data-action="rent"]')) {
-        e.preventDefault();
-        alert('You must agree to the Guidelines before using this feature.');
-      }
-    }
-  }, true);
-});
-</script>
-
 </body>
 </html>
