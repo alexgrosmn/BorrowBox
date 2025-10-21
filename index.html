@@ -584,8 +584,123 @@
       <div style="margin-top:10px"><button class="btn primary" type="submit">Add item</button></div>
     </form>
   </div>
-  </section>
+  </section>    
 
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <button class="close-btn" id="closeSettings">×</button>
+    <h3>Settings</h3>
+    <p><strong>User:</strong> <span id="settingsUserName">Guest</span></p>
+    <p><strong>Email:</strong> <span id="settingsUserEmail">Not signed in</span></p>
+    <hr>
+    <label class="toggle">
+      <input type="checkbox" id="darkModeToggle">
+      <span>Dark Mode</span>
+    </label>
+    <br>
+    <button class="btn-accent" id="openSettingsPage">More Settings</button>
+    <button class="btn-accent" id="logoutBtn">Log Out</button>
+  </div>
+</div>
+
+<script>
+function openSettingsModal() {
+  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  document.getElementById('settingsUserName').textContent = user.name || 'Guest';
+  document.getElementById('settingsUserEmail').textContent = user.email || 'Not signed in';
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+document.getElementById('closeSettings').addEventListener('click', ()=> 
+  document.getElementById('settingsModal').style.display='none'
+);
+document.getElementById('openSettingsPage').addEventListener('click', ()=>{
+  document.getElementById('settingsModal').style.display='none';
+  showPage('#page-settings');
+});
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  localStorage.removeItem('currentUser');
+  alert('You have been logged out.');
+  location.reload();
+});
+</script>
+
+  <!-- SETTINGS PAGE -->
+<section id="page-settings" class="page" style="display:none;">
+  <h2>Account Settings</h2>
+  <div class="settings-grid">
+    <div class="panel-border">
+      <h4>Profile</h4>
+      <label>Name:</label>
+      <input type="text" id="settingsNameInput" placeholder="Enter new name">
+      <label>Email:</label>
+      <input type="email" id="settingsEmailInput" placeholder="Enter new email">
+      <button class="btn-accent" id="saveSettingsBtn">Save Changes</button>
+    </div>
+
+    <div class="panel-border">
+      <h4>Password</h4>
+      <label>New Password:</label>
+      <input type="password" id="newPassword">
+      <label>Confirm Password:</label>
+      <input type="password" id="confirmPassword">
+      <button class="btn-accent" id="changePasswordBtn">Change Password</button>
+    </div>
+
+    <div class="panel-border">
+      <h4>Notifications</h4>
+      <label><input type="checkbox" id="notifToggle"> Enable email notifications</label>
+    </div>
+
+    <div class="panel-border">
+      <h4>Privacy</h4>
+      <p>Your data is securely stored in local storage only.</p>
+      <button class="btn-accent" id="deleteAccountBtn" style="background:#d9534f;">Delete Account</button>
+    </div>
+  </div>
+</section>
+
+<script>
+document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+  const newName = document.getElementById('settingsNameInput').value.trim();
+  const newEmail = document.getElementById('settingsEmailInput').value.trim();
+  if (!newName && !newEmail) return alert('Enter something to update.');
+  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  const index = users.findIndex(u => u.email === user.email);
+  if (index === -1) return alert('User not found.');
+  if (newName) user.name = users[index].name = newName;
+  if (newEmail) user.email = users[index].email = newEmail;
+  localStorage.setItem('currentUser', JSON.stringify(user));
+  localStorage.setItem('bb_users', JSON.stringify(users));
+  alert('Account info updated.');
+});
+
+document.getElementById('changePasswordBtn').addEventListener('click', ()=>{
+  const p1 = document.getElementById('newPassword').value.trim();
+  const p2 = document.getElementById('confirmPassword').value.trim();
+  if (!p1 || !p2) return alert('Enter and confirm password.');
+  if (p1 !== p2) return alert('Passwords do not match.');
+  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  const index = users.findIndex(u => u.email === user.email);
+  users[index].password = p1;
+  localStorage.setItem('bb_users', JSON.stringify(users));
+  alert('Password changed successfully.');
+});
+
+document.getElementById('deleteAccountBtn').addEventListener('click', ()=>{
+  if (!confirm('Are you sure you want to delete your account?')) return;
+  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  users = users.filter(u => u.email !== user.email);
+  localStorage.removeItem('currentUser');
+  localStorage.setItem('bb_users', JSON.stringify(users));
+  alert('Account deleted.');
+  location.reload();
+});
+</section>
+  
   <!-- CHECKOUT -->
 <section id="page-checkout" class="page" style="display:none">
     <div class="panel-fill">
@@ -1574,3 +1689,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </body>
 
 </html>
+
