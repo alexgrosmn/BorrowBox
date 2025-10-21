@@ -1,0 +1,1599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BorrowBox</title>
+<style>
+  :root{
+    --bg: #ffffff;
+    --card: #ffffff;
+    --accent: #2466ff;
+    --muted: #6b7280;
+    --panel-fill: #e0e0e0; /* darker grey as requested */
+    --panel-border: #cfcfcf;
+    --black-border: #000000;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system;
+    background:var(--bg);
+    color:#111;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  /* Main page container - top spacing changes per page */
+  main{max-width:1100px;margin:110px auto 40px;padding:12px;min-height:60vh}
+  /* Header fixed */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 20px;
+    background:var(--bg);
+    position:fixed;
+    top:0;left:0;right:0;
+    z-index:120;
+  }
+  /* Non-home pages: visible grey header bar starting under logo and extending up */
+  body.page header{ background:var(--panel-fill); height:120px; }
+
+  #topActions {
+    z-index: 1000; 
+  }
+  /* Center logo area */
+  .center-logo{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%) translateY(0);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    pointer-events:none; /* so it doesn't block page clicks */
+    top:6px;
+    transition:transform .28s, height .28s;
+  }
+  .center-logo img{
+    height:220px;
+    object-fit:contain;
+    display:block;
+    pointer-events:none; /* clickable if desired, but generally hidden by onerror */
+  }
+  #revText { 
+    width: 100%; 
+    resize: none;
+  }
+  /* HOMEPAGE: bigger logo and lower */
+  body.home .center-logo img{ height:520px; }
+  body.home .center-logo{ transform:translateX(-50%) translateY(-11vh); }
+
+  /* OTHER PAGES: smaller logo, slightly lower */
+  body.page .center-logo img{ height:200px; }
+  body.page .center-logo{ transform:translateX(-50%) translateY(-6vh); }
+  /* left burger area */
+  .left-burger{display:flex;align-items:center;z-index:130}
+  .burger-btn{
+    width:44px;height:44px;border-radius:8px;background:var(--card);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(20,30,80,0.06);cursor:pointer;border:0;
+    pointer-events:auto;
+    transition:transform .28s;
+  }
+  /* three bar lines */
+  .burger-lines{width:18px;height:2px;background:#222;box-shadow:0 6px 0 #222,0 -6px 0 #222}
+
+  /* attached tab (visual) - will move when sidebar opens */
+  .hamburger-tab{position:absolute;left:220px;top:18px;width:44px;height:44px;border-radius:8px;background:var(--card);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(20,30,80,0.06);pointer-events:none;transition:transform .28s}
+  .hamburger-tab .hamburger-lines{width:18px;height:2px;background:#222;box-shadow:0 6px 0 #222,0 -6px 0 #222}
+  /* when sidebar open, move burger & tab right to appear attached */
+  .sidebar-open .burger-btn{ transform: translateX(260px); }
+  .sidebar-open .hamburger-tab{ transform: translateX(260px); }
+  .right-actions{display:flex;align-items:center;gap:12px;z-index:130;position:absolute;right:20px;top:12px}
+  .btn{padding:8px 12px;border-radius:8px;background:var(--card);box-shadow:0 4px 8px rgba(20,30,80,0.04);cursor:pointer;border:0}
+  .btn.primary{background:var(--accent);color:#fff}
+  .small{font-size:12px;color:var(--muted)}
+  /* Sidebar */
+  .sidebar{
+    position:fixed;left:0;top:0;height:100%;width:260px;background:var(--card);
+    box-shadow:2px 0 20px rgba(10,20,60,0.06);padding:20px;
+    transform:translateX(-260px);transition:transform .28s;z-index:125;
+    overflow:auto;
+  }
+  .sidebar.open{transform:translateX(0)}
+  .nav a{display:block;padding:10px;border-radius:6px;color:#111;text-decoration:none;margin:6px 0}
+  .nav a:hover{background:#f1f5ff}
+  /* HOME HERO */
+  .hero{padding:28px;border-radius:12px;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;min-height:calc(100vh - 140px)}
+  .search-wrap{width:100%;display:flex;justify-content:center;margin-top:6px}
+  .search{width:100%;max-width:820px;display:flex;gap:8px}
+  .search input{
+    flex:1;padding:14px;border-radius:10px;border:1px solid #e6e9ef;background:#fff;
+    box-shadow:0 6px 18px rgba(36,102,255,0.06);
+    outline:none;
+  }
+  .search input:focus{ box-shadow:0 10px 30px rgba(36,102,255,0.12); }
+  .search button{padding:12px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+  /* HOME boxes */
+  .home-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px;width:100%;max-width:1100px;
+  }
+  .box-card{
+    background:var(--card);padding:20px;border-radius:12px;box-shadow:0 6px 18px rgba(20,30,80,0.04);
+    text-align:center;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;min-height:160px;
+  }
+  .box-card svg{ width:64px;height:64px; display:block;margin:0 auto 8px auto; }
+  .box-card h3{margin:0;padding-top:8px;font-weight:700}
+
+  .home-slogan{display:block;margin-top:22px;font-size:16px;color:var(--muted);text-align:center}
+  /* Panel filled (About / Guidelines / Contact) */
+  .panel-fill{
+    background:var(--panel-fill);
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:14px;
+  }
+  /* Black-border only panel (no fill) for filters and dashboard boxes */
+  .panel-border{
+    background:transparent;
+    border:2px solid var(--black-border);
+    border-radius:10px;
+    padding:14px;
+  }
+  .scroll-panel{ max-height:60vh; overflow-y:auto; padding-right:8px; }
+  /* shop layout */
+  .layout{display:grid;grid-template-columns:260px 1fr;gap:20px}
+  .items-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .item-card{background:var(--card);padding:12px;border-radius:10px;cursor:pointer}
+  .item-card img{width:100%;height:140px;object-fit:cover;border-radius:6px}
+  .price{font-weight:700;margin-top:8px}
+
+  /* filters tweaks: reduce gap above title by reducing padding */
+  .filters h4{ margin-top:0; margin-bottom:8px; padding-top:0; }
+
+  /* inline label + select container for "Type" */
+  .inline-row{display:flex;align-items:center;gap:8px}
+  .inline-row label{display:inline-block;margin:0;font-size:13px;color:var(--muted)}
+
+  /* item detail */
+  .detail{display:flex;flex-direction:column;gap:12px}
+  .detail-main{display:flex;gap:20px;align-items:flex-start}
+  .detail-main img{width:420px;height:320px;object-fit:cover;border-radius:8px;box-shadow:0 12px 30px rgba(20,30,80,0.06)}
+  .detail-info{flex:1}
+  .muted{color:var(--muted)}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .small-input{padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:100%}
+
+  /* Removes underline from the seller link text and stars */
+  #sellerLink,
+  #sellerLink:hover {
+      text-decoration: none;
+      cursor: pointer; /* Keep the pointer cursor to show it's clickable */
+  }
+
+  /* forms & dashboard */
+  form{
+      display:flex;
+      flex-direction:column;
+      gap:10px
+  }
+  label{
+      font-size:13px;
+      color:var(--muted)
+  }
+  input,textarea,select{
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #e6e9ef
+  }
+  input[type="file"]{
+      padding:6px
+  }
+  textarea{
+      min-height:120px
+  }
+  #loginForm input{
+      margin:0;
+      padding-left:10px;
+      box-sizing:border-box
+  }
+  .dash-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px
+  }
+  .trans-card{
+      background:var(--card);
+      padding:12px;
+      border-radius:10px
+  }
+  .muted-small{
+      font-size:12px;
+      color:var(--muted)
+  }
+  /* modal */
+  .modal-bg{display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.35);align-items:center;justify-content:center;z-index:10000}
+  .modal{background:var(--card);padding:18px;border-radius:10px;max-width:720px;width:95%}
+
+  #sellerReviews div,
+  #sellerReviews p,
+  #sellerReviews span {
+      word-break: break-word;
+  }
+
+  .star-rating {
+    display: flex;
+    flex-direction: row-reverse; /* Reverse direction so 5 is on the left */
+    justify-content: flex-end;
+    margin: 0px 0 16px 0;
+  }
+
+  .star-rating input {
+    display: none; /* Hide the actual radio buttons */
+  }
+
+  .star-rating label {
+      font-size: 28px;
+      color: var(--muted); /* Use muted color for empty stars */
+      cursor: pointer;
+      padding: 0 2px;
+      transition: color 0.2s;
+  }
+
+
+  .star-rating input:checked ~ label,
+  .star-rating label:hover,
+  .star-rating label:hover ~ label {
+      color: #C39C00; 
+      text-shadow: 0 0 1px #333;
+  }
+
+  .display-stars {
+    color: #C39C00; 
+    font-size: 18px;
+    margin-right: 8px;
+    letter-spacing: 2px;
+  }
+
+  .star-filter-wrap option {
+    font-size: 16px; 
+    letter-spacing: 1px;
+  }
+
+  .inline-stars {
+    color: #C39C00; 
+    font-size: 14px; /* Slightly smaller for inline text */
+    letter-spacing: 1px;
+    margin-left: 5px;
+    font-weight: 500;
+  }
+
+  /* responsive */
+  @media (max-width:1000px){
+    .home-grid{grid-template-columns:repeat(2,1fr)}
+    .center-logo img{height:240px}
+    .detail-main{flex-direction:column}
+    .detail-main img{width:100%;height:300px}
+    .layout{grid-template-columns:1fr}
+    .right-actions{right:10px; top:10px}
+  }
+
+  /* page spacing adjustments */
+  body.page main{ margin-top:160px; }  /* more top margin on non-home pages so logo/header not overlap */
+  body.home main{ margin-top:110px; }
+
+  /* subtle focus outline for interactive things */
+  a:focus, button:focus, input:focus, select:focus, textarea:focus{ outline: 3px solid rgba(36,102,255,0.14); outline-offset:2px; }
+
+</style>
+</head>
+<body class="home">
+
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar" aria-hidden="true">
+  <nav class="nav">
+    <a href="#/" data-route>Home</a>
+    <a href="#/shop" data-route>Shop</a>
+    <a href="#/dashboard" data-route>Dashboard</a>
+    <a href="#" onclick="openSettingsModal()">Settings</a> <!-- ✅ Added -->
+    <a href="#/add" data-route>Add Item</a>
+    <a href="#/guidelines" data-route>Guidelines</a>
+    <a href="#/about" data-route>About Us</a>
+    <a href="#/contact" data-route>Contact Info</a>
+  </nav>
+  <!-- removed "signed in as" -->
+</div>
+
+<!-- Header -->
+<header>
+  <div class="left-burger">
+    <button id="burger" class="burger-btn" aria-label="Open menu"><div class="burger-lines" aria-hidden="true"></div></button>
+    <!-- hamburger tab visual attached to sidebar; hidden from pointer events -->
+  </div>
+
+  <!-- center logo - uses logo.png in same folder if present -->
+  <div class="center-logo">
+    <img id="mainLogo" src="logo.png" alt="BorrowBox Logo" onerror="this.style.display='none'">
+  </div>
+
+  <!-- top-right actions (positioned absolutely to keep same spot across pages) -->
+  <div class="right-actions" id="topActions">
+    <div id="user-greeting" class="small" style="display:none;cursor:pointer">Hi, <span id="gname"></span></div>
+    <button class="btn" id="loginBtn">Log in / Sign up</button>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <button class="close-btn" id="closeSettings">×</button>
+    <h3>Settings</h3>
+    <p><strong>User:</strong> <span id="settingsUserName">Guest</span></p>
+    <p><strong>Email:</strong> <span id="settingsUserEmail">Not signed in</span></p>
+    <hr>
+    <label class="toggle">
+      <input type="checkbox" id="darkModeToggle">
+      <span>Dark Mode</span>
+    </label>
+    <br>
+    <button class="btn-accent" id="openSettingsPage">More Settings</button>
+    <button class="btn-accent" id="logoutBtn">Log Out</button>
+  </div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<section id="page-settings" class="page" style="display:none;">
+  <h2>Account Settings</h2>
+  <div class="settings-grid">
+    <div class="panel-border">
+      <h4>Profile</h4>
+      <label>Name:</label>
+      <input type="text" id="settingsNameInput" placeholder="Enter new name">
+      <label>Email:</label>
+      <input type="email" id="settingsEmailInput" placeholder="Enter new email">
+      <button class="btn-accent" id="saveSettingsBtn">Save Changes</button>
+    </div>
+    <div class="panel-border">
+      <h4>Password</h4>
+      <label>New Password:</label>
+      <input type="password" id="newPassword">
+      <label>Confirm Password:</label>
+      <input type="password" id="confirmPassword">
+      <button class="btn-accent" id="changePasswordBtn">Change Password</button>
+    </div>
+    <div class="panel-border">
+      <h4>Notifications</h4>
+      <label><input type="checkbox" id="notifToggle"> Enable email notifications</label>
+    </div>
+    <div class="panel-border">
+      <h4>Privacy</h4>
+      <p>Your data is securely stored in local storage only.</p>
+      <button class="btn-accent" id="deleteAccountBtn" style="background:#d9534f;">Delete Account</button>
+    </div>
+  </div>
+</section>
+
+<script>
+function openSettingsModal() {
+  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  document.getElementById('settingsUserName').textContent = user.name || 'Guest';
+  document.getElementById('settingsUserEmail').textContent = user.email || 'Not signed in';
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+document.getElementById('closeSettings').addEventListener('click', ()=> document.getElementById('settingsModal').style.display='none');
+document.getElementById('openSettingsPage').addEventListener('click', ()=>{
+  document.getElementById('settingsModal').style.display='none';
+  showPage('#page-settings');
+});
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  localStorage.removeItem('currentUser');
+  alert('You have been logged out.');
+  location.reload();
+});
+document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+  const newName = document.getElementById('settingsNameInput').value.trim();
+  const newEmail = document.getElementById('settingsEmailInput').value.trim();
+  if (!newName && !newEmail) return alert('Enter something to update.');
+  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  const index = users.findIndex(u => u.email === user.email);
+  if (index === -1) return alert('User not found.');
+  if (newName) user.name = users[index].name = newName;
+  if (newEmail) user.email = users[index].email = newEmail;
+  localStorage.setItem('currentUser', JSON.stringify(user));
+  localStorage.setItem('bb_users', JSON.stringify(users));
+  alert('Account info updated.');
+});
+document.getElementById('changePasswordBtn').addEventListener('click', ()=>{
+  const p1 = document.getElementById('newPassword').value.trim();
+  const p2 = document.getElementById('confirmPassword').value.trim();
+  if (!p1 || !p2) return alert('Enter and confirm password.');
+  if (p1 !== p2) return alert('Passwords do not match.');
+  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  const index = users.findIndex(u => u.email === user.email);
+  users[index].password = p1;
+  localStorage.setItem('bb_users', JSON.stringify(users));
+  alert('Password changed successfully.');
+});
+document.getElementById('deleteAccountBtn').addEventListener('click', ()=>{
+  if (!confirm('Are you sure you want to delete your account?')) return;
+  let user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  users = users.filter(u => u.email !== user.email);
+  localStorage.removeItem('currentUser');
+  localStorage.setItem('bb_users', JSON.stringify(users));
+  alert('Account deleted.');
+  location.reload();
+});
+</script>
+
+  <!-- HOME -->
+  <section id="page-home" class="page" style="display:block">
+    <div class="hero">
+      <div class="search-wrap">
+        <div class="search" id="homeSearchWrap">
+          <input id="searchInput" placeholder="Search anything" />
+          <button id="searchBtn">Search</button>
+        </div>
+      </div>
+
+      <div class="home-grid" style="width:100%;max-width:1100px">
+        <!-- Shop -->
+        <div class="box-card" data-go="#/shop">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 7l-1 13h14l-1-13z"></path>
+            <path d="M9 7a3 5 0 0 1 6 0"></path>
+          </svg>
+          <h3>Shop</h3>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="box-card" data-go="#/dashboard">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="19" x2="4" y2="10"></line>
+            <line x1="12" y1="19" x2="12" y2="4"></line>
+            <line x1="20" y1="19" x2="20" y2="14"></line>
+          </svg>
+          <h3>Dashboard</h3>
+        </div>
+
+        <!-- Add -->
+        <div class="box-card" data-go="#/add">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <h3>Add Item</h3>
+        </div>
+
+        <!-- Guidelines -->
+        <div class="box-card" data-go="#/guidelines">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="2" width="18" height="20" rx="2" ry="2"></rect>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="9" y1="12" x2="15" y2="12"></line>
+            <line x1="9" y1="16" x2="15" y2="16"></line>
+            <polyline points="6 8 7 9 8.5 7.5"></polyline>
+            <polyline points="6 12 7 13 8.5 11.5"></polyline>
+            <polyline points="6 16 7 17 8.5 15.5"></polyline>
+          </svg>
+          <h3>Guidelines</h3>
+        </div>
+
+      </div>
+
+      <div class="home-slogan">Borrow, Rent, Share — All in One Place.</div>
+    </div>
+
+    <!-- Contact footer shown on all pages except Contact page -->
+    <div id="globalContactFooter" style="position:fixed;left:0;right:0;bottom:10px;text-align:center;font-size:13px;color:var(--muted);z-index:50">
+      Contact: alexandeg@umca.school • dominic.p@umca.school
+    </div>
+  </section>
+
+  <!-- SHOP -->
+  <section id="page-shop" class="page" style="display:none">
+    <div class="layout">
+      <aside class="filters panel-border">
+        <h4>Filters</h4>
+        <label>Category</label>
+        <select id="filterCategory">
+          <option value="">All</option>
+          <option>Tools</option>
+          <option>Kitchen</option>
+          <option>Books</option>
+          <option>Electronics</option>
+          <option>Sports</option>
+        </select>
+
+        <div class="inline-row" style="margin-top:8px">
+          <label for="filterType">Type</label>
+          <select id="filterType" style="min-width:140px">
+            <option value="">Any</option>
+            <option value="rent">Rent</option>
+            <option value="borrow">Borrow</option>
+          </select>
+        </div>
+
+        <label style="margin-top:12px">Minimum Rating</label>
+        <div class="star-filter-wrap">
+          <select id="filterMinRating">
+            <option value="0">Any Rating</option>
+            <option value="5">★★★★★ & Up</option>
+            <option value="4">★★★★☆ & Up</option>
+            <option value="3">★★★☆☆ & Up</option>
+            <option value="2">★★☆☆☆ & Up</option>
+            <option value="1">★☆☆☆☆ & Up</option>
+          </select>
+        </div>
+
+        <label style="margin-top:8px">Search</label>
+        <input id="shopSearch" placeholder="Search items..." />
+        <div style="margin-top:10px"><button class="btn" id="applyFilters">Apply</button></div>
+
+      </aside>
+
+      <section>
+        <h2>Shop</h2>
+        <div id="itemsGrid" class="items-grid"></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ITEM DETAIL -->
+  <section id="page-item" class="page" style="display:none">
+    <button class="btn" id="backToShop">← Back to shop</button>
+
+    <div class="panel-fill" style="margin-top:12px">
+      <div class="detail">
+        <div class="detail-main">
+          <img id="itemImage" src="" alt="Item image">
+          <div class="detail-info">
+            <h2 id="itemName">Item name</h2>
+            <p id="itemShort" class="muted" style="display:none"></p> <!-- not used; keep for compatibility -->
+            <div id="priceBlock" style="margin-top:8px"></div>
+            <div style="margin-top:10px">Seller: <a href="#" id="sellerLink"></a></div>
+
+            <div style="margin-top:12px">
+              <h4>Description</h4>
+              <p id="itemLong"></p>
+            </div>
+
+            <div style="margin-top:12px">
+              <div id="reviewFormWrap"></div>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px">
+              <div id="actionButtons"></div>
+            </div>
+
+            <div id="deliveryEstimateInfo" class="muted-small" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SELLER MODAL -->
+  <div id="sellerModal" class="modal-bg">
+    <div class="modal">
+      <h3 id="sellerModalName">Seller</h3>
+      <div id="sellerStats" class="muted-small">Sold: 0 • Leased: 0 • Lended: 0</div>
+      <div style="margin-top:12px">
+        <h4>Reviews</h4>
+        <div id="sellerReviews"></div>
+      </div>
+      <div style="margin-top:12px;text-align:right"><button class="btn" id="closeSeller">Close</button></div>
+    </div>
+  </div>
+
+  <!-- ADD ITEM -->
+  <section id="page-add" class="page" style="display:none">
+  <div class="panel-fill">
+    <h2>Add Item</h2>
+    <form id="addItemForm">
+      <label for="ai_title">Title</label><input id="ai_title" type="text" required />
+      <label for="ai_category">Category</label><select id="ai_category"><option>Tools</option><option>Kitchen</option><option>Books</option><option>Electronics</option><option>Sports</option></select>
+      <label for="ai_type">Type</label>
+      <select id="ai_type">
+        <option value="borrow">Borrow</option>
+        <option value="rent">Rent</option>
+      </select>
+
+      <div id="priceRent"><label for="ai_rentweek">Price per week (if renting)</label><input id="ai_rentweek" type="text" placeholder="$0/week" /></div>
+
+      <label for="ai_long">Description</label><textarea id="ai_long"></textarea>
+
+      <label for="ai_imageFile">Upload image (optional)</label><input id="ai_imageFile" type="file" accept="image/*" />
+      <label for="ai_image">Or paste image URL (optional)</label><input id="ai_image" type="text" />
+
+      <label for="ai_delivery">Estimated delivery time (for drop-off) — e.g., "30 mins", "2 hours"</label><input id="ai_delivery" type="text" placeholder="Optional — seller's estimated delivery time" />
+
+      <input id="ai_seller" type="hidden" required /> 
+      
+      <label>Item listed by:</label>
+      <div id="ai_sellerDisplay" style="padding: 10px; border: 1px solid #e6e9ef; border-radius: 8px; background: #f9f9f9;">
+          </div>
+      <div style="margin-top:10px"><button class="btn primary" type="submit">Add item</button></div>
+    </form>
+  </div>
+  </section>
+
+  <!-- CHECKOUT -->
+<section id="page-checkout" class="page" style="display:none">
+    <div class="panel-fill">
+      <h2>Checkout</h2>
+      <div id="checkoutSummary" class="trans-card"></div>
+
+      <h4>Delivery / Pickup method</h4>
+      <form id="checkoutForm">
+        <label><input type="radio" name="delivery" value="meet" checked> Meet at a neutral location</label>
+        <label><input type="radio" name="delivery" value="home"> Go to seller's location</label>
+        <label><input type="radio" name="delivery" value="drop"> Drop-off zone (code-locked)</label>
+
+        <div id="checkoutAddressWrap">
+            <label>Enter meeting address (or details)</label><input id="checkoutAddress" class="small-input" placeholder="e.g., 123 Park Ave, near coffee shop" />
+        </div>
+        <label>Enter meeting time</label><input id="checkoutTime" type="time" class="small-input" />
+
+        <div id="dropInfo" style="display:none;margin-top:8px" class="small muted">Drop-off: seller will provide a passcode to open the lock-box. You will receive it after confirming.</div>
+
+        <div style="margin-top:10px">
+          <button class="btn primary" type="submit">Confirm</button>
+          <button class="btn" id="cancelCheckout" type="button">Cancel</button>
+        </div>
+      </form>
+
+      <div id="checkoutResult" style="margin-top:10px"></div>
+    </div>
+  </section>
+  
+  <!-- DASHBOARD -->
+  <section id="page-dashboard" class="page" style="display:none">
+    <h2>Dashboard</h2>
+    <div class="dash-grid">
+      <div class="panel-border">
+        <h4>Your Listings</h4>
+        <div id="myListings" class="scroll-panel"></div>
+      </div>
+      <div class="panel-border">
+        <h4>Your Transactions</h4>
+        <div id="myTrans" class="scroll-panel"></div>
+        <button class="btn-accent" onclick="openSettingsModal()">⚙️ Settings</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GUIDELINES -->
+  <section id="page-guidelines" class="page" style="display:none">
+    <div class="panel-fill">
+      <h2>Guidelines</h2>
+      <ul>
+        <li>Be respectful and punctual when meeting for pickups.</li>
+        <li>If using the drop-off zone: place the item in a bag/box with a code lock. Share the passcode with the customer only after the transaction is confirmed.</li>
+        <li>Items should be returned in the same condition. Any damages should be reported immediately.</li>
+        <li>Only arrange in-person pickups with verified/trusted users when possible.</li>
+        <li>Do not share your home address until you are comfortable; prefer neutral public meeting spots.</li>
+        <li>Follow all local laws and safety guidelines.</li>
+      </ul>
+    </div>
+  
+  <div class="guidelines-agree" style="text-align:center;margin-top:20px;">
+    <button id="agreeBtn" class="btn-accent">I Agree</button>
+  </div>
+</section>
+
+  <!-- ABOUT US -->
+  <section id="page-about" class="page" style="display:none">
+    <div class="panel-fill">
+      <h2>About Us</h2>
+      <p>BorrowBox was created by Alex and Dominic as a community-first way to borrow and rent items. Our mission is to make life easier, save money, reduce waste, and strengthen communities by helping people share resources instead of letting them go unused.</p>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="page-contact" class="page" style="display:none">
+    <div class="panel-fill">
+      <h2>Contact Info</h2>
+      <p>alexandeg@umca.school<br>dominic.p@umca.school</p>
+    </div>
+  </section>
+
+  <!-- LOGIN MODAL -->
+  <div id="loginModal" class="modal-bg">
+    <div class="modal">
+      <h3>Log in / Sign up</h3>
+            <form id="loginForm" novalidate>
+        <label for="loginName">Name</label>
+        <input id="loginName" required />
+
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="text" required />
+
+        <div style="margin-top:10px">
+          <button class="btn primary" type="submit">Sign in / Create</button>
+          <button class="btn" id="loginClose" type="button">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT ITEM MODAL (full fields, matches Add Item) -->
+  <div id="editModal" class="modal-bg">
+  <div class="modal">
+    <h3>Edit item</h3>
+    <form id="editForm">
+      <input id="edit_id" type="hidden" />
+      <label for="edit_title">Title</label><input id="edit_title" />
+      <label for="edit_cat">Category</label><select id="edit_cat"><option>Tools</option><option>Kitchen</option><option>Books</option><option>Electronics</option><option>Sports</option></select>
+      <label for="edit_type">Type</label>
+      <select id="edit_type"><option value="borrow">Borrow</option><option value="rent">Rent</option></select>
+      
+      <div id="edit_priceRent" style="display:none"><label for="edit_rent">Price per week</label><input id="edit_rent" type="text" /></div>
+
+      <label for="edit_long">Description</label><textarea id="edit_long"></textarea>
+
+      <label for="edit_imageFile">Upload image (optional)</label><input id="edit_imageFile" type="file" accept="image/*" />
+      <label for="edit_imageURL">Or paste image URL (optional)</label><input id="edit_imageURL" type="text" />
+
+      <label for="edit_delivery">Estimated delivery time (for drop-off)</label><input id="edit_delivery" type="text" />
+      <label for="edit_seller">Seller name (display name)</label><input id="edit_seller" type="text" />
+
+      <div style="margin-top:10px;text-align:right">
+        <button class="btn primary" type="submit">Save</button>
+        <button class="btn" type="button" id="editCancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</main>
+
+<script>
+/* small helper */
+const dom = id => document.getElementById(id);
+
+/* initial data (localStorage) */
+/* initial data (localStorage) */
+/* initial data (localStorage) */
+function initialData(){
+  // 1. Initialize bb_items to an empty array if it doesn't exist
+  if(!localStorage.getItem('bb_items')){
+    localStorage.setItem('bb_items', JSON.stringify([])); 
+  }
+  
+  // 2. Initialize bb_users to an empty array if it doesn't exist
+  if(!localStorage.getItem('bb_users')) {
+    localStorage.setItem('bb_users', JSON.stringify([]));
+  }
+  
+  // 3. Initialize bb_sellers to an empty array if it doesn't exist
+  if(!localStorage.getItem('bb_sellers')) {
+    localStorage.setItem('bb_sellers', JSON.stringify([]));
+  }
+  
+  // 4. Initialize bb_transactions to an empty array if it doesn't exist
+  if(!localStorage.getItem('bb_transactions')) {
+    localStorage.setItem('bb_transactions', JSON.stringify([]));
+  }
+}
+initialData();
+
+function prefillAddItemForm() {
+    const user = getCurrentUser();
+    const sellerInput = dom('ai_seller');
+    const sellerDisplay = dom('ai_sellerDisplay');
+
+    if (user && sellerInput && sellerDisplay) {
+        // 1. Set the value in the hidden input field (this is what gets saved)
+        sellerInput.value = user.name;
+        
+        // 2. Update the display div so the user can see their name
+        sellerDisplay.textContent = user.name;
+    } else if (sellerDisplay) {
+        // Handle case where user is not logged in
+        sellerDisplay.innerHTML = 'You must <a href="#" onclick="dom(\'loginModal\').style.display=\'flex\'; return false;">Log in</a> to list an item.';
+        sellerInput.value = ''; // Ensure the hidden field is empty if not logged in
+    }
+}
+
+function clearTransaction(id) {
+    let transactions = JSON.parse(localStorage.getItem('bb_transactions') || '[]');
+    const updatedTransactions = transactions.filter(t => t.id !== id);
+    localStorage.setItem('bb_transactions', JSON.stringify(updatedTransactions));
+    renderDashboard(); 
+}
+
+/* Routing + pages */
+const pages = Array.from(document.querySelectorAll('.page'));
+function hideAllPages(){ pages.forEach(p=>p.style.display='none'); }
+function showPage(selector){
+  hideAllPages();
+  const el = document.querySelector(selector);
+  if(el) el.style.display='block';
+  if(selector === '#page-home'){
+    document.body.classList.add('home');
+    document.body.classList.remove('page');
+  } else {
+    document.body.classList.remove('home');
+    document.body.classList.add('page');
+  }
+  sidebar.classList.remove('open');
+  document.body.classList.remove('sidebar-open');
+  updateFooterVisibility();
+}
+function route(){
+  const hash = location.hash || '#/';
+  if(hash.startsWith('#/item/')) {
+    const id = hash.split('/')[2]; renderItem(id); showPage('#page-item');
+  } else if(hash.startsWith('#/checkout/')) {
+    const id = hash.split('/')[2]; renderCheckout(id); showPage('#page-checkout');
+  } else if(hash === '#/' ) showPage('#page-home');
+  else if(hash === '#/shop') { renderShop(); showPage('#page-shop'); }
+  else if(hash === '#/add') { showPage('#page-add'); prefillAddItemForm(); }
+  else if(hash === '#/dashboard') { renderDashboard(); showPage('#page-dashboard'); }
+  else if(hash === '#/guidelines') showPage('#page-guidelines');
+  else if(hash === '#/about') showPage('#page-about');
+  else if(hash === '#/contact') showPage('#page-contact');
+  else showPage('#page-home');
+}
+window.addEventListener('hashchange', route);
+window.addEventListener('load', ()=> {
+  route(); 
+});
+
+/* Sidebar toggle & attached movement */
+const sidebar = dom('sidebar');
+const burger = dom('burger');
+burger.addEventListener('click', ()=> {
+  sidebar.classList.toggle('open');
+  document.body.classList.toggle('sidebar-open');
+});
+document.querySelectorAll('[data-route]').forEach(a=>a.addEventListener('click',(e)=>{ e.preventDefault(); location.hash = a.getAttribute('href'); sidebar.classList.remove('open'); document.body.classList.remove('sidebar-open'); }));
+
+/* Home grid clicks */
+document.querySelectorAll('.home-grid .box-card').forEach(c=> c.addEventListener('click', ()=> {
+  const go = c.getAttribute('data-go'); if(go) location.hash = go;
+}));
+
+/* Search - home */
+function doMainSearch(){
+  const q = dom('searchInput').value.trim().toLowerCase();
+  if(!q){ alert('Type something to search'); return; }
+  const items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  const matches = items.filter(it => ( (it.title||'') + (it.short||'') + (it.long||'') + (it.seller||'') ).toLowerCase().includes(q));
+  if(matches.length){ location.hash = '#/shop'; if(dom('shopSearch')) dom('shopSearch').value = q; renderShop(); return; }
+  const pagesMap = {home:'#/',shop:'#/shop',dashboard:'#/dashboard',guidelines:'#/guidelines',about:'#/about',contact:'#/contact'};
+  const found = Object.keys(pagesMap).find(p => p.includes(q) || q.includes(p));
+  if(found) location.hash = pagesMap[found];
+  else alert('No results found.');
+}
+dom('searchBtn').addEventListener('click', doMainSearch);
+dom('searchInput').addEventListener('keydown', e=> { if(e.key==='Enter') doMainSearch(); });
+
+/* Shop rendering */
+function renderShop(){
+  const items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  const grid = dom('itemsGrid');
+  grid.innerHTML = '';
+  const cat = dom('filterCategory') ? dom('filterCategory').value : '';
+  const type = dom('filterType') ? dom('filterType').value : '';
+  const s = dom('shopSearch') ? dom('shopSearch').value.trim().toLowerCase() : '';
+  const minRating = dom('filterMinRating') ? parseInt(dom('filterMinRating').value) : 0; 
+  const getAverageRating = (itemSeller) => {
+      const sellers = getSellers(); 
+      const seller = sellers.find(s => s.name === itemSeller);
+      
+      if (!seller || !seller.reviews || seller.reviews.length === 0) {
+          return 0; 
+      }
+      
+      const validRatings = seller.reviews.filter(r => r.rating > 0).map(r => r.rating);
+      if (validRatings.length === 0) {
+          return 0;
+      }
+      const sum = validRatings.reduce((a, b) => a + b, 0);
+      return sum / validRatings.length;
+  };
+
+  const filtered = items.filter(it=>{
+    if(cat && it.category !== cat) return false;
+    if(type && it.type !== type) return false;
+    if(s && !((it.title||'') + (it.short||'') + (it.long||'')).toLowerCase().includes(s)) return false;
+    if (minRating > 0) {
+        const avgRating = getAverageRating(it.seller);
+        if (avgRating < minRating) {
+            return false;
+        }
+    }
+    return true;
+  });
+  if(filtered.length===0) { grid.innerHTML = '<div class="small muted">No items found.</div>'; return; }
+  filtered.forEach(it=>{
+    const div = document.createElement('div'); div.className='item-card';
+    const ratingDisplay = getAverageRatingDisplay(it.seller);
+    const priceDisplay = it.type === 'rent' ? '$' + it.rentWeek + '/week • rent' : 'Free to borrow';
+
+    div.innerHTML = `<img src="${it.image||'https://via.placeholder.com/400x240?text=No+image'}"><div style="padding-top:8px"><strong>${it.title}</strong><div class="small muted">${it.category} • Seller: ${it.seller}${ratingDisplay}</div><div class="price">${priceDisplay}</div></div>`;
+    
+    div.addEventListener('click', ()=> location.hash = '#/item/'+it.id);
+    grid.appendChild(div);
+  });
+}
+if(dom('applyFilters')) dom('applyFilters').addEventListener('click', renderShop);
+if(dom('shopSearch')) dom('shopSearch').addEventListener('keydown', e=> { if(e.key==='Enter') renderShop(); });
+
+/* Item detail */
+let currentItem = null;
+function renderItem(id){
+  const items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  const it = items.find(i=>i.id===id);
+  if(!it){ alert('Item not found.'); location.hash = '#/shop'; return; }
+  currentItem = it;
+  dom('itemImage').src = it.image || 'https://via.placeholder.com/420x320';
+  dom('itemName').textContent = it.title;
+  dom('itemLong').textContent = it.long || '';
+  dom('sellerLink').innerHTML = it.seller + getAverageRatingDisplay(it.seller);
+  dom('sellerLink').onclick = (e)=>{ e.preventDefault(); showSeller(it.seller); }
+  dom('deliveryEstimateInfo').textContent = it.deliveryEstimate ? `Seller's estimated drop-off time: ${it.deliveryEstimate}` : '';
+  const priceBlock = dom('priceBlock');
+  const actionButtons = dom('actionButtons');
+  actionButtons.innerHTML = '';
+
+  if(it.type === 'rent'){
+    priceBlock.innerHTML = `<div class="price">$${it.rentWeek} / week — For rent</div>`;
+    const b = document.createElement('button'); b.className='btn primary'; b.textContent='Rent'; b.onclick = ()=> startCheckout('rent');
+    actionButtons.appendChild(b);
+  } else {
+    // This is the 'borrow' option
+    priceBlock.innerHTML = `<div class="price">Available to borrow (free)</div>`;
+    const b = document.createElement('button'); b.className='btn primary'; b.textContent='Borrow'; b.onclick = ()=> startCheckout('borrow');
+    actionButtons.appendChild(b);
+  }
+
+  // Reviews UI
+  const reviewWrap = dom('reviewFormWrap');
+  const user = getCurrentUser();
+  reviewWrap.innerHTML = '';
+  reviewWrap.innerHTML = '';
+  if(user){
+    reviewWrap.innerHTML = `
+    <div style="max-width: 480px; margin-top:0">
+        
+        <h4>Rate this item</h4>
+        <div class="star-rating" id="reviewStars">
+            <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars">★</label>
+            <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars">★</label>
+            <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars">★</label>
+            <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars">★</label>
+            <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
+        </div>
+        
+        <textarea id="revText" placeholder="Write a short review..."></textarea>
+        <div style="margin-top:6px">
+            <button class="btn" id="submitReview">Submit review</button>
+        </div>
+    </div>
+    `;
+ dom('submitReview').onclick = ()=> {
+      const text = dom('revText').value.trim();
+      const ratingInput = document.querySelector('#reviewStars input[name="rating"]:checked');
+      const rating = ratingInput ? parseInt(ratingInput.value) : 0;
+      if(!text && rating === 0) return alert('Please provide a rating or write something.');
+      addReview(it.seller, {
+        by: user.name,
+        text,
+        rating,
+        date: new Date().toISOString()
+      });
+      dom('revText').value='';
+      alert('Review submitted.');
+    };
+  } else {
+    reviewWrap.innerHTML = `<div class="muted-small">Sign in to leave a review.</div>`;
+  }
+}
+if(dom('backToShop')) dom('backToShop').addEventListener('click', ()=> location.hash = '#/shop');
+
+/* Sellers & reviews */
+function getSellers(){ return JSON.parse(localStorage.getItem('bb_sellers')||'[]'); }
+function setSellers(s){ localStorage.setItem('bb_sellers', JSON.stringify(s)); }
+function findSeller(name){ const s = getSellers(); return s.find(x=>x.name===name); }
+function ensureSellerExists(name){ let sellers = getSellers(); if(!sellers.find(s=>s.name===name)){ sellers.push({name, sold:0, leased:0, lended:0, reviews:[]}); setSellers(sellers); } }
+function getAverageRatingDisplay(itemSeller) {
+    const sellers = getSellers();
+    const seller = sellers.find(s => s.name === itemSeller);
+    
+    if (!seller || !seller.reviews || seller.reviews.length === 0) {
+        return ''; 
+    }
+
+    const validRatings = seller.reviews.filter(r => r.rating > 0).map(r => r.rating);
+    if (validRatings.length === 0) {
+        return '';
+    }
+    
+    const sum = validRatings.reduce((a, b) => a + b, 0);
+    const avgRating = sum / validRatings.length;
+    
+    // Calculate filled and empty stars for display
+    const roundedRating = Math.round(avgRating);
+    const filledStars = '★'.repeat(roundedRating);
+    const emptyStars = '☆'.repeat(5 - roundedRating);
+    
+    // Format the average to one decimal place
+    const avgText = avgRating.toFixed(1);
+
+    // Returns formatted HTML string
+    return `<span class="inline-stars">${filledStars}${emptyStars} (${avgText})</span>`;
+}
+function showSeller(name){
+  ensureSellerExists(name);
+  let seller = findSeller(name);
+  dom('sellerModalName').textContent = seller.name;
+  dom('sellerStats').textContent = `Sold: ${seller.sold} • Leased: ${seller.leased} • Lended: ${seller.lended}`;
+  
+  const rv = dom('sellerReviews'); 
+  rv.innerHTML = ''; // Clear previous reviews
+
+  const reviews = seller.reviews || [];
+
+  if(reviews.length === 0) {
+      rv.innerHTML = '<div class="muted-small">No reviews yet.</div>';
+      return; // Exit if no reviews
+  }
+  
+  reviews.slice().reverse().forEach(r => {
+      
+      const starCount = Math.round(r.rating || 0);
+      const filledStars = '★'.repeat(starCount);
+      const emptyStars = '☆'.repeat(5 - starCount);
+      const starHTML = r.rating ? `<span class="display-stars">${filledStars}${emptyStars}</span>` : '';
+      
+      const d = document.createElement('div');
+      d.className = 'panel-border'; 
+      d.style.marginBottom = '12px';
+      d.style.padding = '8px 12px'; 
+
+      d.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                  ${starHTML}
+                  <strong>${r.by}</strong> 
+              </div>
+              <div class="muted-small">${new Date(r.date).toLocaleDateString()}</div>
+          </div>
+          <p style="margin-top:4px; margin-bottom:0;">${r.text}</p>
+      `;
+      rv.appendChild(d);
+  });
+  
+  dom('sellerModal').style.display='flex';
+}
+dom('closeSeller').addEventListener('click', ()=> dom('sellerModal').style.display='none');
+function addReview(sellerName, review){
+  let sellers = getSellers();
+  let s = sellers.find(x=>x.name===sellerName);
+  if(!s){ s = {name:sellerName, sold:0, leased:0, lended:0, reviews:[]}; sellers.push(s); }
+  s.reviews = s.reviews || [];
+  s.reviews.push(review);
+  setSellers(sellers);
+}
+
+function getSellerAddress(sellerName) {
+    // This provides a consistent mock address based on the seller name.
+    // In the future, this will look up the address from the user's settings in localStorage.
+    const addresses = {
+        "Alex": "101 Main Street, Anytown",
+        "Dominic": "543 Maple Drive, Suburbia",
+        "BorrowBox_Admin": "22 Oak Lane, Central City",
+        // Fallback for any other seller
+        "default": "456 Commerce Way, Business District" 
+    };
+    
+    // Simple check to match the seller name to an address, falling back to default
+    const addressKey = Object.keys(addresses).find(key => sellerName.includes(key)) || "default";
+    return addresses[addressKey];
+}
+
+function setupDeliveryListeners() {
+    const radios = document.querySelectorAll('input[name="delivery"]');
+    const addressWrap = dom('checkoutAddressWrap');
+    const dropInfo = dom('dropInfo');
+
+    radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const val = e.target.value;
+            
+            // Address input is ONLY shown for 'meet' (neutral location)
+            addressWrap.style.display = (val === 'meet') ? 'block' : 'none';
+            
+            // Drop-off info text is ONLY shown for 'drop'
+            dropInfo.style.display = (val === 'drop') ? 'block' : 'none';
+        });
+    });
+    
+    // Ensure the initial state (checked radio on load) is correct
+    const initialState = document.querySelector('input[name="delivery"]:checked').value;
+    addressWrap.style.display = (initialState === 'meet') ? 'block' : 'none';
+    dropInfo.style.display = (initialState === 'drop') ? 'block' : 'none';
+}
+
+if(dom('ai_type')){
+  dom('ai_type').addEventListener('change', () => {
+    const type = dom('ai_type').value;
+    dom('priceRent').style.display = (type === 'rent') ? 'block' : 'none';
+  });
+}
+if(dom('addItemForm')) {
+  dom('addItemForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+    const id = 'i'+Date.now();
+    let imageSrc = (dom('ai_image') ? dom('ai_image').value.trim() : '');
+    const fileInput = dom('ai_imageFile');
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if(file){
+      imageSrc = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    }
+    if(!imageSrc) imageSrc = 'https://via.placeholder.com/420x320?text=Item';
+    const typeVal = (dom('ai_type').value === 'borrow' ? 'borrow' : dom('ai_type').value);
+    const newItem = {
+      id,
+      title: dom('ai_title').value,
+      category: dom('ai_category').value,
+      type: typeVal,
+      price: dom('ai_price') ? dom('ai_price').value : '',
+      rentWeek: dom('ai_rentweek') ? dom('ai_rentweek').value : '',
+      short: '', 
+      long: dom('ai_long').value,
+      image: imageSrc,
+      seller: dom('ai_seller').value,
+      deliveryEstimate: dom('ai_delivery').value || ''
+    };
+    items.unshift(newItem);
+    localStorage.setItem('bb_items', JSON.stringify(items));
+    ensureSellerExists(newItem.seller);
+    alert('Item added! It will appear in the Shop.');
+    e.target.reset();
+    dom('priceRent').style.display = 'none';
+    location.hash = '#/shop';
+  });
+}
+
+/* Checkout */
+function startCheckout(mode){
+  if(!currentItem) return alert('No item selected.');
+  const user = getCurrentUser();
+  if(!user) return triggerLogin(() => { startCheckout(mode); });
+  sessionStorage.setItem('bb_pending', JSON.stringify({itemId: currentItem.id, mode}));
+  location.hash = '#/checkout/'+currentItem.id;
+}
+function renderCheckout(id){
+  const pending = JSON.parse(sessionStorage.getItem('bb_pending')||'{}');
+  const items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  const it = items.find(i=>i.id===id) || items.find(i=>i.id===pending.itemId);
+  if(!it){ alert('No item for checkout.'); location.hash = '#/shop'; return; }
+  
+  dom('checkoutForm').setAttribute('data-item', JSON.stringify(it));
+    
+  dom('checkoutSummary').innerHTML = `<strong>${it.title}</strong><div class="small muted">${it.seller} • ${it.category}</div><div style="margin-top:8px">${pending.mode==='rent' ? '<strong>Rent • $'+it.rentWeek+'/week</strong>' : '<strong>Borrow • Free</strong>'}</div>`;
+  dom('checkoutAddress').value = '';
+  dom('checkoutTime').value = '';
+  dom('dropInfo').style.display='none';
+  dom('checkoutResult').innerHTML = '';
+  
+  setTimeout(setupDeliveryListeners, 10); 
+  
+  dom('checkoutAddressWrap').style.display = 'block'; 
+}
+if(dom('checkoutForm')) {
+  dom('checkoutForm').addEventListener('submit',(e)=>{
+    e.preventDefault();
+    
+    const form = dom('checkoutForm');
+    const result = dom('checkoutResult');
+    const selectedDelivery = document.querySelector('input[name="delivery"]:checked').value;
+    
+    // Retrieve item details stored in the renderCheckout function
+    const checkoutItem = JSON.parse(form.getAttribute('data-item')); 
+
+    const pending = JSON.parse(sessionStorage.getItem('bb_pending')||'{}');
+    const user = getCurrentUser();
+    
+    if(!pending.itemId || !user) {
+        result.innerHTML = '<span style="color:red">Error: No item or user data found.</span>';
+        return;
+    }
+    
+    const address = dom('checkoutAddress').value.trim();
+    const time = dom('checkoutTime').value.trim();
+    let confirmationMessage = '';
+    let txAddressDetail = '';
+
+    // --- Delivery Logic ---
+    if (selectedDelivery === 'meet') {
+        if (!address || !time) {
+            result.innerHTML = '<span style="color:red">Please enter a meeting address and time for a neutral location.</span>';
+            return;
+        }
+        confirmationMessage = `Your meeting for <strong>${checkoutItem.title}</strong> is confirmed. Meeting at <strong>${address}</strong> at <strong>${time}</strong>.`;
+        txAddressDetail = address;
+    } else if (selectedDelivery === 'home') {
+        const sellerAddress = getSellerAddress(checkoutItem.seller); // Get the mock address
+        confirmationMessage = `Your purchase of <strong>${checkoutItem.title}</strong> is confirmed. The seller's location is <strong>${sellerAddress}</strong>. Please contact the seller to arrange a specific time.`;
+        txAddressDetail = sellerAddress;
+    } else if (selectedDelivery === 'drop') {
+        // Generate a simple, random 6-digit code for the mock-up
+        const dropCode = Math.floor(100000 + Math.random() * 900000);
+        confirmationMessage = `Your transaction for <strong>${checkoutItem.title}</strong> is confirmed. The drop-off code is: <strong>${dropCode}</strong>.`;
+        txAddressDetail = `Drop-off code: ${dropCode}`;
+    }
+    
+    // --- Transaction Saving ---
+    const txs = JSON.parse(localStorage.getItem('bb_transactions')||'[]');
+    const tx = { 
+        id:'t'+Date.now(), 
+        itemId: checkoutItem.id, 
+        itemTitle: checkoutItem.title, 
+        seller: checkoutItem.seller, 
+        buyer: user.name, 
+        mode: pending.mode, 
+        delivery: selectedDelivery, 
+        address: txAddressDetail,
+        time: time, 
+        date: new Date().toISOString() 
+    };
+    
+    txs.unshift(tx);
+    localStorage.setItem('bb_transactions', JSON.stringify(txs));
+    incrementSellerCounter(checkoutItem.seller, pending.mode);
+    
+    // --- Display Result ---
+    result.innerHTML = `<div class="panel-fill" style="margin-top:10px">${confirmationMessage}</div>`;
+    sessionStorage.removeItem('bb_pending');
+    renderDashboard();
+    
+    // Disable form fields after successful submission
+    form.querySelectorAll('input, button').forEach(el => el.disabled = true);
+  });
+}
+if(dom('cancelCheckout')) dom('cancelCheckout').addEventListener('click', ()=> { sessionStorage.removeItem('bb_pending'); location.hash = '#/shop'; });
+  
+/* seller counters */
+function incrementSellerCounter(sellerName, mode){
+  let sellers = getSellers();
+  let s = sellers.find(x=>x.name===sellerName);
+  if(!s){ s = {name:sellerName, leased:0, lended:0, reviews:[]}; sellers.push(s); }
+  if(mode === 'rent') s.leased = (s.leased||0) + 1;
+  else if(mode === 'borrow') s.lended = (s.lended||0) + 1;
+  
+  setSellers(sellers);
+}
+
+/* Dashboard render */
+function renderDashboard(){
+  const user = getCurrentUser();
+  if(dom('user-greeting')) {
+    if(user){ dom('user-greeting').style.display='inline'; dom('gname').textContent = user.name; dom('loginBtn').style.display='none'; }
+    else { dom('user-greeting').style.display='none'; dom('loginBtn').style.display='inline-block'; }
+  }
+  if(!user){
+    dom('myListings').innerHTML = '<div class="small muted">Sign in to see your listings</div>';
+    dom('myTrans').innerHTML = '<div class="small muted">Sign in to see your transactions</div>';
+    return;
+  }
+  const items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  const txs = JSON.parse(localStorage.getItem('bb_transactions')||'[]');
+  const myItems = items.filter(i=>i.seller === user.name);
+  dom('myListings').innerHTML = myItems.length ? myItems.map(it=>`
+  <div class="trans-card" data-item-id="${it.id}" 
+       style="display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;">
+          <strong>${it.title}</strong>
+          <div class="small muted">
+              ${it.type==='rent' ? 'For rent $'+it.rentWeek+'/week' : 'Available to borrow'}
+          </div>
+          <div style="margin-top:8px">
+              <button class="btn" data-action="edit">Edit</button> 
+              <button class="btn" data-action="remove">Remove</button>
+          </div>
+      </div>
+      <img src="${it.image || 'https://via.placeholder.com/100x80?text=No+Image'}" 
+           alt="${it.title}" 
+           style="width:100px;height:80px;object-fit:cover;border-radius:6px;
+                  box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-left:40px;" />
+
+  </div>
+`).join('') : '<div class="small muted">You have no listings.</div>';
+
+const myTx = txs.filter(t => t.buyer === user.name || t.seller === user.name);
+
+dom('myTrans').innerHTML = myTx.length ? myTx.map(t => {
+  // find the item so we can get its image
+  const items = JSON.parse(localStorage.getItem('bb_items') || '[]');
+  const item = items.find(i => i.id === t.itemId);
+  const imgSrc = item && item.image ? item.image : 'https://via.placeholder.com/100x80?text=No+Image';
+
+  return `
+    <div class="trans-card" data-trans-id="${t.id}" 
+         style="display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;">
+            <strong>${t.itemTitle}</strong>
+            <div class="small muted">
+                ${t.mode} • ${t.delivery}${t.dropCode ? ' • code: '+t.dropCode : ''} 
+                ${t.time ? ' • time: '+t.time : ''}
+            </div>
+            <div class="small muted">Buyer: ${t.buyer} • Seller: ${t.seller}</div>
+            <div class="small muted">Meeting details: ${t.address || '(none)'}</div>
+            <div style="margin-top:8px">
+                <button class="btn" data-action="clear">Clear</button>
+            </div>
+        </div>
+        <img src="${imgSrc}" 
+             alt="${t.itemTitle}" 
+             style="width:100px;height:80px;object-fit:cover;border-radius:6px;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-left:40px;" />
+    </div>
+  `;
+}).join('') : '<div class="small muted">No transactions.</div>';
+}
+/* Edit / Remove item */
+function startEdit(id){
+  const items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  const it = items.find(i=>i.id===id);
+  if(!it) return alert('Item not found');
+  dom('edit_id').value = it.id;
+  dom('edit_title').value = it.title;
+  dom('edit_cat').value = it.category;
+  dom('edit_type').value = it.type === 'borrow' ? 'borrow' : it.type;
+  dom('edit_rent').value = it.rentWeek || '';
+  dom('edit_long').value = it.long || '';
+  dom('edit_delivery').value = it.deliveryEstimate || '';
+  dom('edit_seller').value = it.seller || '';
+  dom('edit_imageURL').value = '';
+  dom('edit_priceRent').style.display = (it.type==='rent') ? 'block' : 'none';
+  dom('editModal').style.display='flex';
+}
+dom('editCancel').addEventListener('click', ()=> dom('editModal').style.display='none');
+dom('edit_type').addEventListener('change', ()=> {
+  const t = dom('edit_type').value;
+  dom('edit_priceRent').style.display = (t==='rent') ? 'block' : 'none';
+});
+
+dom('editForm').addEventListener('submit', async (e)=> {
+  e.preventDefault();
+  const id = dom('edit_id').value;
+  let items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  const idx = items.findIndex(i=>i.id===id);
+  if(idx===-1) return alert('Item not found');
+  // process file input into base64 if chosen
+  const fileInput = dom('edit_imageFile');
+  let newImage = '';
+  if(fileInput && fileInput.files && fileInput.files[0]){
+    newImage = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(fileInput.files[0]);
+    });
+  } else {
+    newImage = dom('edit_imageURL').value.trim();
+  }
+  items[idx].title = dom('edit_title').value;
+items[idx].category = dom('edit_cat').value;
+items[idx].type = dom('edit_type').value;
+items[idx].rentWeek = dom('edit_rent').value;
+items[idx].long = dom('edit_long').value;
+items[idx].deliveryEstimate = dom('edit_delivery').value;
+items[idx].seller = dom('edit_seller').value;
+if(newImage) items[idx].image = newImage;
+localStorage.setItem('bb_items', JSON.stringify(items));
+dom('editModal').style.display='none';
+alert('Item updated.');
+renderShop();
+renderDashboard();
+});
+
+function removeItem(id){
+  if(!confirm('Remove this item?')) return;
+  let items = JSON.parse(localStorage.getItem('bb_items')||'[]');
+  items = items.filter(i=>i.id!==id);
+  localStorage.setItem('bb_items', JSON.stringify(items));
+  renderShop();
+  renderDashboard();
+}
+/* AUTH */
+dom('loginClose').addEventListener('click', ()=> dom('loginModal').style.display='none');
+
+dom('loginForm').addEventListener('submit', (e)=>{ 
+  e.preventDefault(); 
+  const name = dom('loginName').value.trim(); 
+  const email = dom('loginEmail').value.trim(); 
+  if (!name || !email) {
+    alert('Enter name and email.');
+    return;
+  }
+  const emailPattern = /^[^@]+@[^@]+\.com$/;
+  if (!emailPattern.test(email)) {
+    alert('Please enter a valid email address (e.g. name@example.com)');
+    return;
+  }
+  const users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  let user = users.find(u => u.email === email);
+  if (!user) { 
+    user = { name, email, created: new Date().toISOString() };
+    users.push(user);
+    localStorage.setItem('bb_users', JSON.stringify(users));
+  }
+  setCurrentUser(user);
+  dom('loginModal').style.display = 'none';
+  dom('loginForm').reset();
+  alert('Signed in as ' + user.name);
+});
+
+function getCurrentUser() {
+  return JSON.parse(localStorage.getItem('bb_current') || 'null');
+}
+function setCurrentUser(u) {
+  localStorage.setItem('bb_current', JSON.stringify(u));
+  renderDashboard();
+  updateFooterVisibility();
+}
+
+/* triggerLogin helper */
+function triggerLogin(after){
+  dom('loginModal').style.display='flex';
+  const old = localStorage.getItem('bb_current');
+  const watcher = setInterval(()=> {
+    if(localStorage.getItem('bb_current') !== old){
+      clearInterval(watcher);
+      if(after) after();
+    }
+  },200);
+}
+
+/* sellers storage helpers - canonical */
+function getSellers(){ return JSON.parse(localStorage.getItem('bb_sellers')||'[]'); }
+function setSellers(s){ localStorage.setItem('bb_sellers', JSON.stringify(s)); }
+
+/* footer visibility: hide on contact page */
+function updateFooterVisibility(){
+  const footer = dom('globalContactFooter');
+  const hash = location.hash || '#/';
+  if(!footer) return;
+  if(hash === '#/contact') footer.style.display = 'none';
+  else footer.style.display = 'block';
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    
+  if(!location.hash || location.hash === '#/') { 
+        document.body.classList.add('home'); 
+    } else { 
+        document.body.classList.add('page'); 
+    }
+    
+    // Call the rendering functions to populate the HTML *before* attaching listeners
+    if (typeof renderShop === 'function') renderShop();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof updateFooterVisibility === 'function') updateFooterVisibility();
+
+    /* 1. Dashboard Listings Delegation (Edit/Remove) */
+    if (dom('myListings')) {
+        dom('myListings').addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            
+            const action = button.getAttribute('data-action');
+            const card = button.closest('.trans-card');
+            if (!card) return;
+            
+            const itemId = card.getAttribute('data-item-id');
+            if (!itemId) return;
+
+            if (action === 'edit') {
+                startEdit(itemId);
+            } else if (action === 'remove') {
+                removeItem(itemId);
+            }
+        });
+    }
+
+    /* 2. Dashboard Transaction Delegation (Clear) */
+    if (dom('myTrans')) {
+        dom('myTrans').addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return; 
+            
+            const action = button.getAttribute('data-action');
+            const card = button.closest('.trans-card');
+            if (!card) return; 
+            
+            const transId = card.getAttribute('data-trans-id');
+            
+            if (action === 'clear') {
+                clearTransaction(transId);
+            }
+        });
+    }
+    
+    /* 3. Sign In/Out Delegation (Top Right Corner) */
+    if (dom('topActions')) {
+        dom('topActions').addEventListener('click', (e) => {
+            const loginBtn = dom('loginBtn');
+            const userGreeting = dom('user-greeting');
+            // Assuming getCurrentUser() is defined outside this block
+            const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null; 
+
+            // Handle Login click
+            if (e.target.closest('#loginBtn') && !user) {
+                dom('loginModal').style.display = 'flex';
+            
+            // Handle Sign Out click
+            } else if (e.target.closest('#user-greeting') && user) {
+                if (confirm('Sign out?')) { 
+                    localStorage.removeItem('bb_current'); 
+                    
+                    if (loginBtn && userGreeting) {
+                        loginBtn.style.display = 'inline-block';
+                        userGreeting.style.display = 'none';
+                    }
+                    
+                    // Assuming renderDashboard() and updateFooterVisibility() are defined
+                    if (typeof renderDashboard === 'function') renderDashboard(); 
+                    if (typeof updateFooterVisibility === 'function') updateFooterVisibility();
+                    
+                    location.hash = '#/';
+                }
+            }
+        });
+    }
+});
+
+</script>
+
+<script>
+// === Guidelines Agreement Logic ===
+document.addEventListener('DOMContentLoaded', () => {
+  const agreeBtn = document.getElementById('agreeBtn');
+  const agreed = localStorage.getItem('bb_agreed') === 'true';
+
+  if (agreeBtn) {
+    if (agreed) agreeBtn.style.display = 'none';
+    agreeBtn.addEventListener('click', () => {
+      localStorage.setItem('bb_agreed', 'true');
+      alert('Thank you for agreeing with the Guidelines');
+      agreeBtn.style.display = 'none';
+    });
+  }
+
+  // Helper to check if user agreed
+  window.checkGuidelinesAgreement = function(actionName) {
+    if (localStorage.getItem('bb_agreed') === 'true') return true;
+    alert('You must agree to the Guidelines before using this feature.' + (actionName ? ' (' + actionName + ')' : ''));
+    return false;
+  };
+
+  // Disable sensitive actions if not agreed
+  document.addEventListener('click', function(e) {
+    const t = e.target;
+    if (!localStorage.getItem('bb_agreed') || localStorage.getItem('bb_agreed') !== 'true') {
+      if (t.matches('.btn-add-item, #addItemBtn, .btn-purchase, .btn-review, #reviewSubmit, [data-action="borrow"], [data-action="rent"]')) {
+        e.preventDefault();
+        alert('You must agree to the Guidelines before using this feature.');
+      }
+    }
+  }, true);
+});
+</script>
+
+</body>
+</html>
