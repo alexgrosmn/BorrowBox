@@ -1534,7 +1534,7 @@ dom('signupForm').addEventListener('submit',(e)=>{
   const password = dom('signupPassword').value.trim();
   const confirm = dom('signupConfirmPassword').value.trim();
 
-  const emailPattern = /^[^@]+@[^@]+\.com$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if(!emailPattern.test(email)) return alert('Enter a valid email (e.g. name@example.com)');
   if(password !== confirm) return alert('Passwords do not match.');
 
@@ -1689,6 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </body>
 
 </html>
+
 
 
 
