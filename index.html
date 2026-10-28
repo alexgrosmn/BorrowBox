@@ -150,7 +150,9 @@
 
   /* filters tweaks: reduce gap above title by reducing padding */
   .filters h4{ margin-top:0; margin-bottom:8px; padding-top:0; }
-
+  .filters {
+    align-self: flex-start; 
+  }
   /* inline label + select container for "Type" */
   .inline-row{display:flex;align-items:center;gap:8px}
   .inline-row label{display:inline-block;margin:0;font-size:13px;color:var(--muted)}
@@ -352,11 +354,125 @@
     text-decoration: none;
     font-weight: 600;
   }
+
+  .about-container, .guidelines-container, .contact-container {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(20,30,80,0.08);
+  padding: 32px;
+  animation: fadeIn 0.6s ease-in-out;
+}
+@keyframes fadeIn { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
+
+/* ABOUT US */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+.team-card {
+  background: var(--panel-fill);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.team-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+.team-card img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+.mission-box {
+  margin-top: 30px;
+  padding: 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2466ff 0%, #7fa8ff 100%);
+  color: white;
+  box-shadow: 0 6px 16px rgba(36,102,255,0.2);
+}
+
+/* GUIDELINES */
+.guidelines-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+.guideline-card {
+  background: var(--card);
+  border-left: 5px solid var(--accent);
+  border-radius: 10px;
+  padding: 16px 20px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.guideline-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+/* CONTACT */
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+.contact-info {
+  font-size: 16px;
+}
+.contact-info a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.contact-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.contact-form input, .contact-form textarea {
+  border: 1px solid #dfe3ec;
+  border-radius: 8px;
+  padding: 10px;
+}
+.contact-form button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.contact-form button:hover {
+  background: #1d56d9;
+}
+@media(max-width:800px){
+  .contact-grid{ grid-template-columns:1fr; }
+}
 </style>
 
 </style>
 </head>
 <body class="home">
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal" style="display:none;">
+  <div class="modal">
+    <button class="close-btn" id="closeSettings">×</button>
+    <h3>Settings</h3>
+    <p><strong>User:</strong> <span id="settingsUserName">Loading...</span></p>
+    <p><strong>Email:</strong> <span id="settingsUserEmail">Loading...</span></p>
+    <hr/>
+    <button class="btn-accent" id="openSettingsPage">More Settings</button>
+    <button class="btn-accent" id="logoutBtn">Log Out</button>
+  </div>
+</div>
 
 <!-- Sidebar -->
 <div id="sidebar" class="sidebar" aria-hidden="true">
@@ -368,8 +484,8 @@
     <a href="#/guidelines" data-route>Guidelines</a>
     <a href="#/about" data-route>About Us</a>
     <a href="#/contact" data-route>Contact Info</a>
+    <a href="#" id="openSettingsModal">Settings</a>
   </nav>
-  <!-- removed "signed in as" -->
 </div>
 
 <!-- Header -->
@@ -432,7 +548,7 @@
           <h3>Add Item</h3>
         </div>
 
-        <!-- Guidelines -->
+        <!-- Guidelines Button -->
         <div class="box-card" data-go="#/guidelines">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="3" y="2" width="18" height="20" rx="2" ry="2"></rect>
@@ -566,7 +682,7 @@
         <option value="rent">Rent</option>
       </select>
 
-      <div id="priceRent"><label for="ai_rentweek">Price per week (if renting)</label><input id="ai_rentweek" type="text" placeholder="$0/week" /></div>
+      <div id="priceRent" style="display:none"><label for="ai_rentweek">Price per week (if renting)</label><input id="ai_rentweek" type="text" placeholder="$0/week" /></div>
 
       <label for="ai_long">Description</label><textarea id="ai_long"></textarea>
 
@@ -580,7 +696,10 @@
       <label>Item listed by:</label>
       <div id="ai_sellerDisplay" style="padding: 10px; border: 1px solid #e6e9ef; border-radius: 8px; background: #f9f9f9;">
           </div>
-      <div style="margin-top:10px"><button class="btn primary" type="submit">Add item</button></div>
+      <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+        <button class="btn primary" type="submit">Add item</button>
+        <span style="color:#666; font-size:14px;">5% service fee helps support BorrowBox.</span>
+      </div>
     </form>
   </div>
   </section>
@@ -631,33 +750,99 @@
 
   <!-- GUIDELINES -->
   <section id="page-guidelines" class="page" style="display:none">
-    <div class="panel-fill">
-      <h2>Guidelines</h2>
-      <ul>
-        <li>Be respectful and punctual when meeting for pickups.</li>
-        <li>If using the drop-off zone: place the item in a bag/box with a code lock. Share the passcode with the customer only after the transaction is confirmed.</li>
-        <li>Items should be returned in the same condition. Any damages should be reported immediately.</li>
-        <li>Only arrange in-person pickups with verified/trusted users when possible.</li>
-        <li>Do not share your home address until you are comfortable; prefer neutral public meeting spots.</li>
-        <li>Follow all local laws and safety guidelines.</li>
-      </ul>
+  <div class="panel-fill">
+    <h2>Community Guidelines</h2>
+    <p>
+      Please read and follow the BorrowBox guidelines to ensure fair and respectful use of the platform.
+    </p>
+
+    <div class="guidelines-list">
+      <div class="guideline-card">
+        Be honest and clear about the items you lend or borrow.
+      </div>
+      <div class="guideline-card">
+        Return borrowed items in the same condition.
+      </div>
+      <div class="guideline-card">
+        Communicate respectfully with others.
+      </div>
+      <div class="guideline-card">
+        Do not share or post inappropriate content.
+      </div>
+      <div class="guideline-card">
+        If using the drop-off zone: place the item in a locker and lock it with your code.
+        Share the passcode with the customer only after the transaction is confirmed.
+      </div>
+      <div class="guideline-card">
+        Items should be returned in the same condition. Any damages should be reported immediately.
+      </div>
+      <div class="guideline-card">
+        Only arrange in-person pickups with trusted users when possible.
+      </div>
     </div>
-  </section>
+
+    <button id="agreeBtn" class="btn-accent" style="margin-top:16px;">
+      I Agree
+    </button>
+    <p
+      id="agreeMsg"
+      style="display:none; color:#2466ff; font-weight:600; margin-top:10px;"
+    >
+      ✅ Thank you for agreeing with the Guidelines!
+    </p>
+  </div>
+</section>
 
   <!-- ABOUT US -->
-  <section id="page-about" class="page" style="display:none">
-    <div class="panel-fill">
-      <h2>About Us</h2>
-      <p>BorrowBox was created by Alex and Dominic as a community-first way to borrow and rent items. Our mission is to make life easier, save money, reduce waste, and strengthen communities by helping people share resources instead of letting them go unused.</p>
-    </div>
+  <section class="page" id="page-about" style="display:none">
+  <div class="about-container">
+  <h2>About Us</h2>
+  <p>BorrowBox was created by Alex and Dominic as a community-first way to borrow and rent items.</p>
+  <div class="team-grid">
+  <div class="team-card">
+  <h3>Alex</h3>
+  <p>Co-Founder &amp; Developer</p>
+  </div>
+  <div class="team-card">
+  <h3>Dominic</h3>
+  <p>Co-Founder &amp; Developer</p>
+  </div>
+  </div>
+  <div class="mission-box">
+  <h3>Our Mission</h3>
+  <p>To make life easier, save money, reduce waste, and strengthen communities by helping people share resources instead of letting them go unused.</p>
+  </div>
+  </div>
   </section>
 
   <!-- CONTACT -->
-  <section id="page-contact" class="page" style="display:none">
-    <div class="panel-fill">
-      <h2>Contact Info</h2>
-      <p>alexandeg@umca.school<br>dominic.p@umca.school</p>
-    </div>
+  <section class="page" id="page-contact" style="display:none">
+  <div class="contact-container">
+  <h2>Contact Us</h2>
+  <div class="contact-grid">
+  <div class="contact-info">
+  <p><strong>Email:</strong><br/>
+  <p>borrowbox@gmail.com<br/>
+            alexandeg@umca.school<br/>
+            dominic.p@umca.school</p>
+  <p><strong>Phone:</strong><br/>
+  <p>416-321-5574</p>
+  <p><strong>Address:</strong><br/>
+            123 Borrow Lane, Toronto, ON, Canada</p>
+  </div>
+  <div class="contact-form">
+  <form>
+  <label>Name</label>
+  <input placeholder="Your name" required="" type="text"/>
+  <label>Email</label>
+  <input placeholder="Your email" required="" type="email"/>
+  <label>Message</label>
+  <textarea placeholder="Write your message..." required=""></textarea>
+  <button type="submit">Send Message</button>
+  </form>
+  </div>
+  </div>
+  </div>
   </section>
 
  
@@ -711,7 +896,7 @@
     <h3>Edit item</h3>
     <form id="editForm">
       <input id="edit_id" type="hidden" />
-      <label for="edit_title">Title</label><input id="edit_title" />
+      <label for="editItem_title">Title</label><input id="editItem_title" />
       <label for="edit_cat">Category</label><select id="edit_cat"><option>Tools</option><option>Kitchen</option><option>Books</option><option>Electronics</option><option>Sports</option></select>
       <label for="edit_type">Type</label>
       <select id="edit_type"><option value="borrow">Borrow</option><option value="rent">Rent</option></select>
@@ -724,7 +909,7 @@
       <label for="edit_imageURL">Or paste image URL (optional)</label><input id="edit_imageURL" type="text" />
 
       <label for="edit_delivery">Estimated delivery time (for drop-off)</label><input id="edit_delivery" type="text" />
-      <label for="edit_seller">Seller name (display name)</label><input id="edit_seller" type="text" />
+      <label for="editItem_sellerName">Seller name (display name)</label><input id="editItem_sellerName" type="text" disabled/>
 
       <div style="margin-top:10px;text-align:right">
         <button class="btn primary" type="submit">Save</button>
@@ -733,6 +918,43 @@
     </form>
   </div>
 </div>
+
+<!-- SETTINGS PAGE -->
+<section class="page" id="page-settings" style="display:none;">
+  <h2>Account Settings</h2>
+  <div class="settings-grid">
+    <div class="panel-border">
+      <h4>Profile</h4>
+      <label>Name:</label>
+      <input id="settingsNameInput" placeholder="Enter new name" type="text"/>
+      <label>Email:</label>
+      <input id="settingsEmailInput" placeholder="Enter new email" type="email"/>
+      <button class="btn-accent" id="saveSettingsBtn">Save Changes</button>
+    </div>
+
+    <div class="panel-border">
+      <h4>Password</h4>
+      <label>New Password:</label>
+      <input id="newPassword" type="password"/>
+      <label>Confirm Password:</label>
+      <input id="confirmPassword" type="password"/>
+      <button class="btn-accent" id="changePasswordBtn">Change Password</button>
+    </div>
+
+    <div class="panel-border">
+      <h4>Notifications</h4>
+      <label><input id="notifToggle" type="checkbox"/> Enable email notifications</label>
+    </div>
+
+    <div class="panel-border">
+      <h4>Privacy</h4>
+      <p>Your data is securely stored in local storage only.</p>
+      <button class="btn-accent" id="deleteAccountBtn" style="background:#d9534f;">Delete Account</button>
+    </div>
+  </div>
+</section>
+
+
 
 </main>
 
@@ -843,6 +1065,37 @@ document.querySelectorAll('.home-grid .box-card').forEach(c=> c.addEventListener
   const go = c.getAttribute('data-go'); if(go) location.hash = go;
 }));
 
+function updateLoginDependentUI() {
+    const user = getCurrentUser();
+    if (user) {
+        // If logged in, hide the login button and show the greeting
+        dom('loginBtn').style.display = 'none';
+        if (dom('gname')) {
+            dom('gname').textContent = user.name;
+        }
+        dom('user-greeting').style.display = 'inline-block';
+    } else {
+        // If logged out, show the login button and hide the greeting
+        dom('loginBtn').style.display = 'inline-block';
+        dom('user-greeting').style.display = 'none';
+    }
+}
+
+// Function to handle the entire logout process
+function logout() {
+    if (!confirm('Sign out?')) return; 
+
+    localStorage.removeItem('bb_current');
+    alert('Logged out successfully.');
+
+    updateLoginDependentUI();
+    if (typeof prefillAddItemForm === 'function') prefillAddItemForm(); // Clears seller name on Add Item page
+    if (typeof renderDashboard === 'function') renderDashboard();   // Shows empty dashboard
+    
+    // Redirect home
+    location.hash = '#/'; 
+}
+
 /* Search - home */
 function doMainSearch(){
   const q = dom('searchInput').value.trim().toLowerCase();
@@ -857,6 +1110,131 @@ function doMainSearch(){
 }
 dom('searchBtn').addEventListener('click', doMainSearch);
 dom('searchInput').addEventListener('keydown', e=> { if(e.key==='Enter') doMainSearch(); });
+
+function renderSettings() {
+  document.querySelectorAll('main .page').forEach(p => p.style.display = 'none');
+  const settingsPage = document.getElementById('page-settings');
+  if (settingsPage) settingsPage.style.display = 'block';
+  document.body.classList.add('page');
+  const user = getCurrentUser();
+  if (user) {
+    const nameInput = document.getElementById('settingsNameInput');
+    const emailInput = document.getElementById('settingsEmailInput');
+    if (nameInput) nameInput.value = user.name;
+    if (emailInput) emailInput.value = user.email;
+  } else {
+    const nameInput = document.getElementById('settingsNameInput');
+    const emailInput = document.getElementById('settingsEmailInput');
+    if (nameInput) nameInput.value = '';
+    if (emailInput) emailInput.value = '';
+  }
+}
+
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+saveSettingsBtn?.addEventListener('click', () => {
+  const user = getCurrentUser();
+  if (!user) {
+    alert("You must be signed in to update your settings.");
+    return;
+  }
+
+  const newName = document.getElementById('settingsNameInput')?.value.trim();
+  const newEmail = document.getElementById('settingsEmailInput')?.value.trim();
+
+  if (!newName || !newEmail) {
+    alert("Name and email cannot be empty.");
+    return;
+  }
+
+  // Update current user
+  const users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+const index = users.findIndex(u => u.email === user.email);
+
+// Update current user
+const oldEmail = user.email;
+user.name = newName;
+user.email = newEmail;
+localStorage.setItem('bb_current', JSON.stringify(user));
+
+// Update the matching record
+if (index !== -1) {
+  users[index].name = newName;
+  users[index].email = newEmail;
+  localStorage.setItem('bb_users', JSON.stringify(users));
+}
+
+  alert("Profile updated successfully!");
+  updateLoginDependentUI();
+});
+
+
+// Change Password
+const changePasswordBtn = document.getElementById('changePasswordBtn');
+changePasswordBtn?.addEventListener('click', () => {
+  const user = getCurrentUser();
+  if (!user) {
+    alert("You must be signed in to change your password.");
+    return;
+  }
+
+  const newPass = document.getElementById('newPassword')?.value.trim();
+  const confirm = document.getElementById('confirmPassword')?.value.trim();
+
+  if (!newPass || !confirm) return alert("Please fill in both fields.");
+  if (newPass !== confirm) return alert("Passwords do not match.");
+
+  const users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  const idx = users.findIndex(u => u.email === user.email);
+  if (idx !== -1) {
+    users[idx].password = newPass;
+    localStorage.setItem('bb_users', JSON.stringify(users));
+    alert("Password changed successfully!");
+  } else {
+    alert("User not found in records.");
+  }
+
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmPassword').value = '';
+});
+
+
+// Delete Account
+const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+deleteAccountBtn?.addEventListener('click', () => {
+  const user = getCurrentUser();
+  if (!user) {
+    alert("No account to delete — you’re not signed in.");
+    return;
+  }
+
+  if (!confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
+
+  // Remove from user list
+  let users = JSON.parse(localStorage.getItem('bb_users') || '[]');
+  users = users.filter(u => u.email !== user.email);
+  localStorage.setItem('bb_users', JSON.stringify(users));
+
+  // Remove current login
+  localStorage.removeItem('bb_current');
+
+  alert("Your account has been deleted.");
+  updateLoginDependentUI();
+  location.hash = '#/';
+});
+
+function renderGuidelines() {
+    dom('content').innerHTML = dom('page-guidelines').innerHTML;
+}
+
+function renderContact() {
+    dom('content').innerHTML = dom('page-contact').innerHTML;
+    // You might add logic here to handle the form submission later
+}
+
+function renderAbout() {
+    dom('content').innerHTML = dom('page-about').innerHTML;
+}
+
 
 /* Shop rendering */
 function renderShop(){
@@ -1112,6 +1490,7 @@ if(dom('ai_type')){
     dom('priceRent').style.display = (type === 'rent') ? 'block' : 'none';
   });
 }
+if (dom('ai_type')) dom('ai_type').dispatchEvent(new Event('change'));
 if(dom('addItemForm')) {
   dom('addItemForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
@@ -1153,12 +1532,23 @@ if(dom('addItemForm')) {
 }
 
 /* Checkout */
-function startCheckout(mode){
-  if(!currentItem) return alert('No item selected.');
-  const user = getCurrentUser();
-  if(!user) return triggerLogin(() => { startCheckout(mode); });
-  sessionStorage.setItem('bb_pending', JSON.stringify({itemId: currentItem.id, mode}));
-  location.hash = '#/checkout/'+currentItem.id;
+function startCheckout(mode, itemId = currentItem ? currentItem.id : location.hash.split('/').pop()) {
+    const user = getCurrentUser();
+
+    // 🎯 FIX: Check for currentItem before proceeding
+    if (!currentItem) return alert('No item selected or page not fully loaded.');
+
+    if (!user) {
+        // Save what the user wanted to do before opening login
+        sessionStorage.setItem('bb_pending', JSON.stringify({ itemId: currentItem.id, mode }));
+        // Assuming triggerLogin shows the modal, we'll use the direct DOM call for clarity
+        dom('loginModal').style.display = 'flex'; 
+        return;
+    }
+
+    // If logged in, clear any pending state and continue
+    sessionStorage.removeItem('bb_pending');
+    location.hash = '#/checkout/' + currentItem.id;
 }
 function renderCheckout(id){
   const pending = JSON.parse(sessionStorage.getItem('bb_pending')||'{}');
@@ -1187,15 +1577,15 @@ if(dom('checkoutForm')) {
     const selectedDelivery = document.querySelector('input[name="delivery"]:checked').value;
     
     // Retrieve item details stored in the renderCheckout function
-    const checkoutItem = JSON.parse(form.getAttribute('data-item')); 
-
+    const itemId = location.hash.split('/')[2]; 
+    const allItems = JSON.parse(localStorage.getItem('bb_items') || '[]');
+    const checkoutItem = allItems.find(item => item.id === itemId);
     const pending = JSON.parse(sessionStorage.getItem('bb_pending')||'{}');
     const user = getCurrentUser();
-    
-    if(!pending.itemId || !user) {
-        result.innerHTML = '<span style="color:red">Error: No item or user data found.</span>';
-        return;
-    }
+    if(!checkoutItem || !user) {
+        result.innerHTML = '<span style="color:red">Error: No item or user data found.</span>';
+        return;
+    }
     
     const address = dom('checkoutAddress').value.trim();
     const time = dom('checkoutTime').value.trim();
@@ -1335,13 +1725,14 @@ function startEdit(id){
   const it = items.find(i=>i.id===id);
   if(!it) return alert('Item not found');
   dom('edit_id').value = it.id;
-  dom('edit_title').value = it.title;
+  dom('editItem_title').value = it.title;
   dom('edit_cat').value = it.category;
   dom('edit_type').value = it.type === 'borrow' ? 'borrow' : it.type;
   dom('edit_rent').value = it.rentWeek || '';
   dom('edit_long').value = it.long || '';
   dom('edit_delivery').value = it.deliveryEstimate || '';
-  dom('edit_seller').value = it.seller || '';
+  dom('editItem_sellerName').value = it.seller || '';
+  dom('editItem_sellerName').disabled = true;
   dom('edit_imageURL').value = '';
   dom('edit_priceRent').style.display = (it.type==='rent') ? 'block' : 'none';
   dom('editModal').style.display='flex';
@@ -1370,13 +1761,13 @@ dom('editForm').addEventListener('submit', async (e)=> {
   } else {
     newImage = dom('edit_imageURL').value.trim();
   }
-  items[idx].title = dom('edit_title').value;
+items[idx].title = dom('editItem_title').value;
 items[idx].category = dom('edit_cat').value;
 items[idx].type = dom('edit_type').value;
 items[idx].rentWeek = dom('edit_rent').value;
 items[idx].long = dom('edit_long').value;
 items[idx].deliveryEstimate = dom('edit_delivery').value;
-items[idx].seller = dom('edit_seller').value;
+items[idx].seller = dom('editItem_sellerName').value;
 if(newImage) items[idx].image = newImage;
 localStorage.setItem('bb_items', JSON.stringify(items));
 dom('editModal').style.display='none';
@@ -1418,7 +1809,7 @@ dom('signupForm').addEventListener('submit',(e)=>{
   const password = dom('signupPassword').value.trim();
   const confirm = dom('signupConfirmPassword').value.trim();
 
-  const emailPattern = /^[^@]+@[^@]+\.com$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if(!emailPattern.test(email)) return alert('Enter a valid email (e.g. name@example.com)');
   if(password !== confirm) return alert('Passwords do not match.');
 
@@ -1443,19 +1834,34 @@ dom('loginForm').addEventListener('submit',(e)=>{
   const user = users.find(u => u.email === email && u.password === password);
   if(!user) return alert('Invalid email or password.');
 
-  setCurrentUser(user);
   alert('Signed in as ' + user.name);
   dom('loginModal').style.display='none';
-  renderDashboard();
+  setCurrentUser(user); 
+  if (location.hash.startsWith('#/checkout/')) {
+        location.reload(); 
+    } else {
+        route(); 
+    }
 });
 
 function getCurrentUser() {
   return JSON.parse(localStorage.getItem('bb_current') || 'null');
 }
-function setCurrentUser(u) {
-  localStorage.setItem('bb_current', JSON.stringify(u));
-  renderDashboard();
-  updateFooterVisibility();
+function setCurrentUser(user) {
+    localStorage.setItem('bb_current', JSON.stringify(user));
+
+    updateLoginDependentUI(); // Updates header greeting/button
+
+    if (typeof route === 'function') {
+        route(location.hash);
+    }
+    
+    // Auto-resume borrow/rent process if one was waiting before login
+    const pending = JSON.parse(sessionStorage.getItem('bb_pending') || 'null');
+    if (pending && typeof startCheckout === 'function') {
+        startCheckout(pending.mode, pending.itemId);
+        sessionStorage.removeItem('bb_pending'); // Clear state after resuming
+    }
 }
 
 /* triggerLogin helper */
@@ -1469,10 +1875,6 @@ function triggerLogin(after){
     }
   },200);
 }
-
-/* sellers storage helpers - canonical */
-function getSellers(){ return JSON.parse(localStorage.getItem('bb_sellers')||'[]'); }
-function setSellers(s){ localStorage.setItem('bb_sellers', JSON.stringify(s)); }
 
 /* footer visibility: hide on contact page */
 function updateFooterVisibility(){
@@ -1550,27 +1952,89 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Handle Sign Out click
             } else if (e.target.closest('#user-greeting') && user) {
-                if (confirm('Sign out?')) { 
-                    localStorage.removeItem('bb_current'); 
-                    
-                    if (loginBtn && userGreeting) {
-                        loginBtn.style.display = 'inline-block';
-                        userGreeting.style.display = 'none';
-                    }
-                    
-                    // Assuming renderDashboard() and updateFooterVisibility() are defined
-                    if (typeof renderDashboard === 'function') renderDashboard(); 
-                    if (typeof updateFooterVisibility === 'function') updateFooterVisibility();
-                    
-                    location.hash = '#/';
-                }
-            }
+                logout();
+            }     
         });
     }
 });
 
+ // === SETTINGS MODAL LOGIC ===
+ const settingsModal = document.getElementById('settingsModal');
+const openSettingsModal = document.getElementById('openSettingsModal');
+const closeSettings = document.getElementById('closeSettings');
+const openSettingsPage = document.getElementById('openSettingsPage');
+const userNameSpan = document.getElementById('settingsUserName');
+const userEmailSpan = document.getElementById('settingsUserEmail');
+const logoutBtn = document.getElementById('logoutBtn');
+logoutBtn?.addEventListener('click', () => {
+  const user = getCurrentUser();
+  if (!user) {
+    alert("You're not signed in.");
+    return;
+  }
+  settingsModal.style.display = 'none';
+  logout();
+});
+
+// Get user info from localStorage
+function loadUserInfo() {
+  const loggedInUser = JSON.parse(localStorage.getItem('bb_current'));
+
+  if (loggedInUser && loggedInUser.name && loggedInUser.email) {
+    userNameSpan.textContent = loggedInUser.name;
+    userEmailSpan.textContent = loggedInUser.email;
+  } else {
+    userNameSpan.textContent = 'Guest';
+    userEmailSpan.textContent = 'Not signed in';
+  }
+}
+
+// Open modal when clicking sidebar "Settings"
+openSettingsModal?.addEventListener('click', (e) => {
+  e.preventDefault();
+  loadUserInfo();
+  settingsModal.style.display = 'flex';
+});
+
+// Close modal when clicking ×
+closeSettings?.addEventListener('click', () => {
+  settingsModal.style.display = 'none';
+});
+
+// Clicking outside modal closes it
+settingsModal?.addEventListener('click', (e) => {
+  if (e.target === settingsModal) {
+    settingsModal.style.display = 'none';
+  }
+});
+
+// "More Settings" button → show full settings page
+openSettingsPage?.addEventListener('click', () => {
+  settingsModal.style.display = 'none';
+  renderSettings();
+});
+
+// Close modal with ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && settingsModal.style.display === 'flex') {
+    settingsModal.style.display = 'none';
+  }
+});
+
+const agreeBtn = dom('agreeBtn');
+const agreeMsg = dom('agreeMsg');
+if (agreeBtn) {
+  agreeBtn.addEventListener('click', () => {
+    if (agreeMsg) {
+      agreeMsg.style.display = 'block';
+    }
+    alert("Thank you for agreeing to the guidelines");
+    agreeBtn.disabled = true;
+    agreeBtn.textContent = 'Agreed';
+  });
+}
+
 </script>
+
 </body>
-
 </html>
-
